@@ -44,6 +44,17 @@
                         {% endfor %}
                     </select>
                 </div>
+
+                <!-- Data Center filter -->
+                <div class="col-auto" style="min-width: 160px;">
+                    <select name="data_center"
+                            id="data-center-filter"
+                            class="form-select form-select-sm">
+                        <option value="">All Data Centers</option>
+                        <option value="ADC" {% if selected_data_center == "ADC" %}selected{% endif %}>ADC</option>
+                        <option value="Icolo" {% if selected_data_center == "Icolo" %}selected{% endif %}>Icolo</option>
+                    </select>
+                </div>
                 <div class="col-auto ms-auto">
                     <div id="bulk-action-buttons" style="display: none;">
                         <a href="#" class="btn btn-sm btn-success me-2" id="send-notification">Send Notification</a>
@@ -193,8 +204,13 @@
   const searchForm = document.getElementById('search-filter-form');
   const searchInput = document.getElementById('search-input');
   const clientTypeFilter = document.getElementById('client-type-filter');
+  const dataCenterFilter = document.getElementById('data-center-filter');
 
   clientTypeFilter.addEventListener('change', () => {
+    searchForm.submit();
+  });
+
+  dataCenterFilter.addEventListener('change', () => {
     searchForm.submit();
   });
 

@@ -28,6 +28,14 @@ class Client(models.Model):
         ],
     )
 
+    # Service location flags (checkboxes)
+    has_adc_services = models.BooleanField(
+        default=False, help_text="Has services in ADC data center"
+    )
+    has_icolo_services = models.BooleanField(
+        default=False, help_text="Has services in Icolo data center"
+    )
+
     # Audit trail
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
@@ -55,6 +63,18 @@ class Client(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.email})"
+
+    @property
+    def data_centers(self):
+        centers = []
+        if self.has_adc_services:
+            centers.append("ADC")
+        if self.has_icolo_services:
+            centers.append("Icolo")
+        return centers
+
+    def data_centers_display(self):
+        return ", ".join(self.data_centers) if self.data_centers else "None"
 
     class Meta:
         indexes = [

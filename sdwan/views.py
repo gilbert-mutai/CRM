@@ -27,12 +27,26 @@ from .utils import get_record_by_id, delete_record, has_form_changed
 from core.models import Client
 from core.forms import NotificationForm
 from core.constants import SIGNATURE_BLOCKS as SIGNATURES
-from core.mattermost import send_to_mattermost
+from core.mattermost import send_to_mattermost,send_email_alert_to_mattermost
 
 
 # ===========================
 # SDWAN Views
 # ===========================
+
+def notify_sdwan(action, company_name, user):
+    user_name = user.get_full_name() or user.email
+    if action == "add":
+        message = f"CRM Updates (SD-WAN): A new SD-WAN record for {company_name} has been added by {user_name}."
+    elif action == "update":
+        message = f"CRM Updates (SD-WAN): SD-WAN record for {company_name} has been modified by {user_name}."
+    elif action == "delete":
+        message = f"CRM Updates (SD-WAN): SD-WAN record for {company_name} has been deleted by {user_name}."
+    else:
+        message = f"CRM Updates (SD-WAN): SD-WAN record for {company_name} was changed by {user_name}."
+
+    send_to_mattermost(message)
+
 
 @login_required
 def sdwan_records(request):
@@ -90,11 +104,18 @@ def add_sdwan_record(request):
     if request.method == "POST":
         form = AddSDWANForm(request.POST)
         if form.is_valid():
-            record = form.save(commit=False)
-            record.created_by = request.user
-            record.updated_by = request.user
-            record.save()
+            new_record = form.save(commit=False)
+            new_record.created_by = request.user
+            new_record.updated_by = request.user
+            new_record.save()
             messages.success(request, "SD-WAN record has been added!")
+
+            # Mattermost notification
+            company_name = (
+                new_record.client.name if getattr(new_record, "client", None) else "Unknown Company"
+            )
+            notify_sdwan("add", company_name, request.user)
+
             return redirect("sdwan_records")
     else:
         form = AddSDWANForm()
@@ -104,32 +125,53 @@ def add_sdwan_record(request):
 
 @login_required
 def update_sdwan_record(request, pk):
-    customer_record = get_object_or_404(SDWAN, pk=pk)
-    form = UpdateSDWANForm(request.POST or None, instance=customer_record)
+    current_record = get_object_or_404(SDWAN, pk=pk)
+    form = UpdateSDWANForm(request.POST or None, instance=current_record)
 
     if form.is_valid():
+        updated_record = form.save(commit=False)
+
         if has_form_changed(form):
-            form.instance.updated_by = request.user
-            form.save()
+            updated_record.updated_by = request.user
+            updated_record.save()
             messages.success(request, "SD-WAN record has been updated!")
+
+            # Mattermost notification
+            company_name = (
+                updated_record.client.name
+                if getattr(updated_record, "client", None)
+                else "Unknown Company"
+            )
+            notify_sdwan("update", company_name, request.user)
         else:
             messages.warning(request, "No changes detected.")
+
         return redirect("sdwan_record", pk=pk)
 
     return render(
-        request, "sdwan_update_record.html", {"form": form, "customer_record": customer_record}
+        request,
+        "sdwan_update_record.html",
+        {"form": form, "customer_record": current_record},
     )
 
 
 @login_required
 def delete_sdwan_record(request, pk):
     record = get_object_or_404(SDWAN, pk=pk)
+    company_name = (
+        record.client.name if record and getattr(record, "client", None) else "Unknown Company"
+    )
     record.delete()
-    messages.success(request, "Record deleted successfully.")
+    messages.success(request, "SD-WAN record deleted successfully.")
+
+    # Mattermost notification
+    notify_sdwan("delete", company_name, request.user)
+
     return redirect("sdwan_records")
 
 
 # ========== Notifications ==========
+
 @login_required
 def send_notification_sdwan(request):
     if request.method == "GET":
@@ -179,6 +221,14 @@ def send_notification_sdwan(request):
             msg.attach_alternative(full_body, "text/html")
             msg.send(fail_silently=False)
 
+            # Send alert to Mattermost (SD-WAN context)
+            send_email_alert_to_mattermost(
+                subject=subject,
+                recipient_count=len(valid_emails),
+                user_display=request.user.get_full_name() or request.user.username,
+                context="sdwan",
+            )
+
             messages.success(
                 request, f"Notification sent to {len(valid_emails)} recipient(s)."
             )
@@ -190,7 +240,6 @@ def send_notification_sdwan(request):
         )
 
     return redirect("sdwan_records")
-
 
 # ========== Export ==========
 @login_required

@@ -12,7 +12,7 @@ from .utils import (
     delete_record,
     has_form_changed,
 )
-from core.mattermost import send_to_mattermost
+from core.mattermost import send_to_mattermost ,send_email_alert_to_mattermost
 from .models import ThreeCX
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
@@ -176,7 +176,6 @@ def update_threecx_record(request, pk):
         {"form": form, "customer_record": current_record},
     )
 
-
 @login_required
 def send_notification_threecx(request):
     if request.method == "GET":
@@ -187,7 +186,9 @@ def send_notification_threecx(request):
             return redirect("threecx_records")
         form = NotificationForm(initial={"bcc_emails": ",".join(emails)})
         return render(
-            request, "threecx_email_notification.html", {"form": form, "emails": emails}
+            request,
+            "threecx_email_notification.html",
+            {"form": form, "emails": emails},
         )
 
     if request.method == "POST":
@@ -201,7 +202,8 @@ def send_notification_threecx(request):
 
             if invalid_emails:
                 messages.warning(
-                    request, f"Ignoring invalid email(s): {', '.join(invalid_emails)}"
+                    request,
+                    f"Ignoring invalid email(s): {', '.join(invalid_emails)}",
                 )
 
             signature_block = SIGNATURES.get(signature_key, signature_key)
@@ -216,17 +218,29 @@ def send_notification_threecx(request):
             msg.attach_alternative(full_body, "text/html")
             msg.send(fail_silently=False)
 
+            #Send alert to Mattermost
+            send_email_alert_to_mattermost(
+                subject=subject,
+                recipient_count=len(valid_emails),
+                user_display=request.user.get_full_name() or request.user.username,
+                context="threecx",
+            )
+
             messages.success(
-                request, f"Notification sent to {len(valid_emails)} recipient(s)."
+                request,
+                f"Notification sent to {len(valid_emails)} recipient(s).",
             )
             return redirect("threecx_records")
 
         emails = request.POST.get("bcc_emails", "").split(",")
         return render(
-            request, "threecx_email_notification.html", {"form": form, "emails": emails}
+            request,
+            "threecx_email_notification.html",
+            {"form": form, "emails": emails},
         )
 
     return redirect("threecx_records")
+
 
 
 @require_POST

@@ -22,12 +22,26 @@ from django.views.decorators.http import require_POST
 from .models import VeeamJob
 from .forms import AddVeeamForm, UpdateVeeamForm
 from .utils import get_record_by_id, delete_record, has_form_changed
-from core.mattermost import send_to_mattermost
+from core.mattermost import send_to_mattermost, send_email_alert_to_mattermost
 
 # Core App
 from core.models import Client
 from core.forms import NotificationForm
 from core.constants import SIGNATURE_BLOCKS as SIGNATURES
+
+
+def notify_veeam(action, company_name, user):
+    user_name = user.get_full_name() or user.email
+    if action == "add":
+        message = f"CRM updates: A new Veeam record for {company_name} has been added by {user_name}"
+    elif action == "update":
+        message = f"CRM updates: Veeam record for {company_name} has been modified by {user_name}"
+    elif action == "delete":
+        message = f"CRM updates: Veeam record for {company_name} has been deleted by {user_name}"
+    else:
+        message = f"CRM updates: Veeam record for {company_name} was changed by {user_name}"
+
+    send_to_mattermost(message)
 
 
 @login_required
@@ -97,8 +111,17 @@ def veeam_record_details(request, pk):
 
 @login_required
 def delete_veeam_record(request, pk):
+    record = get_record_by_id(pk)
+    company_name = (
+        record.client.name if record and getattr(record, "client", None) else "Unknown Company"
+    )
+
     delete_record(pk)
     messages.success(request, "Record deleted successfully.")
+
+    # Mattermost notification
+    notify_veeam("delete", company_name, request.user)
+
     return redirect("veeam_records")
 
 
@@ -112,6 +135,13 @@ def add_veeam_record(request):
             record.updated_by = request.user
             record.save()
             messages.success(request, "Record has been added!")
+
+            # Mattermost notification
+            company_name = (
+                record.client.name if getattr(record, "client", None) else "Unknown Company"
+            )
+            notify_veeam("add", company_name, request.user)
+
             return redirect("veeam_records")
     else:
         form = AddVeeamForm()
@@ -129,12 +159,21 @@ def update_veeam_record(request, pk):
             form.instance.updated_by = request.user
             form.save()
             messages.success(request, "Record has been updated!")
+
+            # Mattermost notification
+            company_name = (
+                record.client.name if getattr(record, "client", None) else "Unknown Company"
+            )
+            notify_veeam("update", company_name, request.user)
         else:
             messages.warning(request, "No changes detected.")
+
         return redirect("veeam_record", pk=pk)
 
     return render(
-        request, "veeam_update_record.html", {"form": form, "customer_record": record}
+        request,
+        "veeam_update_record.html",
+        {"form": form, "customer_record": record},
     )
 
 
@@ -186,6 +225,14 @@ def send_notification_veeam(request):
             )
             msg.attach_alternative(full_body, "text/html")
             msg.send(fail_silently=False)
+
+            # 🚀 Send alert to Mattermost (Veeam context)
+            send_email_alert_to_mattermost(
+                subject=subject,
+                recipient_count=len(valid_emails),
+                user_display=request.user.get_full_name() or request.user.username,
+                context="veeam",
+            )
 
             messages.success(
                 request, f"Notification sent to {len(valid_emails)} recipient(s)."

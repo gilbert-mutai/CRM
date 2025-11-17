@@ -49,6 +49,20 @@ from core.mattermost import send_to_mattermost
 # Get custom user model
 User = get_user_model()
 
+def notify_project(action, company_name, user):
+    user_name = user.get_full_name() or user.email
+    if action == "add":
+        message = f"CRM updates: A new Project record for {company_name} has been added by {user_name}"
+    elif action == "update":
+        message = f"CRM updates: Project record for {company_name} has been modified by {user_name}"
+    elif action == "delete":
+        message = f"CRM updates: Project record for {company_name} has been deleted by {user_name}"
+    else:
+        message = f"CRM updates: Project record for {company_name} was changed by {user_name}"
+
+    send_to_mattermost(message)
+
+
 
 @login_required
 def pm_records(request):
@@ -172,6 +186,15 @@ def add_pm_record(request):
             new_project.updated_by = request.user
             new_project.save()
             messages.success(request, "Project added successfully.")
+
+            # Mattermost notification
+            company_name = (
+                new_project.customer_name.name
+                if getattr(new_project, "customer_name", None)
+                else "Unknown Company"
+            )
+            notify_project("add", company_name, request.user)
+
             return redirect("pm_records")
     else:
         form = AddProjectForm()
@@ -190,6 +213,14 @@ def update_pm_record(request, pk):
                 updated_project.updated_by = request.user
                 updated_project.save()
                 messages.success(request, "Project updated successfully.")
+
+                # Mattermost notification
+                company_name = (
+                    updated_project.customer_name.name
+                    if getattr(updated_project, "customer_name", None)
+                    else "Unknown Company"
+                )
+                notify_project("update", company_name, request.user)
             else:
                 messages.warning(request, "No changes detected.")
             return redirect("pm_record", pk=pk)
@@ -201,8 +232,19 @@ def update_pm_record(request, pk):
 
 @login_required
 def delete_pm_record(request, pk):
+    project = get_project_by_id(pk)
+    company_name = (
+        project.customer_name.name
+        if getattr(project, "customer_name", None)
+        else "Unknown Company"
+    )
+
     delete_project(pk)
     messages.success(request, "Project deleted successfully.")
+
+    # Mattermost notification
+    notify_project("delete", company_name, request.user)
+
     return redirect("pm_records")
 
 

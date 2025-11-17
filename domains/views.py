@@ -14,9 +14,23 @@ from django.core.mail import EmailMultiAlternatives
 from .forms import AddDomainForm
 from .models import Domain
 from .utils import get_record_by_id, delete_record, has_form_changed
-from core.mattermost import send_to_mattermost
+from core.mattermost import send_to_mattermost ,send_email_alert_to_mattermost
 from core.forms import NotificationForm
 from core.constants import SIGNATURE_BLOCKS as SIGNATURES
+
+
+def notify_domain(action, company_name, user):
+    user_name = user.get_full_name() or user.email
+    if action == "add":
+        message = f"CRM Updates (Domains & Hosting): A new domain record for {company_name} has been added by {user_name}."
+    elif action == "update":
+        message = f"CRM Updates (Domains & Hosting): Domain record for {company_name} has been modified by {user_name}."
+    elif action == "delete":
+        message = f"CRM Updates (Domains & Hosting): Domain record for {company_name} has been deleted by {user_name}."
+    else:
+        message = f"CRM Updates (Domains & Hosting): Domain record for {company_name} was changed by {user_name}."
+
+    send_to_mattermost(message)
 
 
 @login_required
@@ -82,8 +96,17 @@ def delete_domain_record(request, pk):
         messages.warning(request, "You must be logged in to do that.")
         return redirect("login")
 
+    record = get_record_by_id(pk)
+    company_name = (
+        record.client.name if record and getattr(record, "client", None) else "Unknown Company"
+    )
+
     delete_record(pk)
     messages.success(request, "Domain record deleted successfully.")
+
+    # Mattermost notification
+    notify_domain("delete", company_name, request.user)
+
     return redirect("domain_records")
 
 
@@ -100,6 +123,13 @@ def add_domain_record(request):
             new_record.updated_by = request.user
             new_record.save()
             messages.success(request, "Domain record has been added!")
+
+            # Mattermost notification
+            company_name = (
+                new_record.client.name if getattr(new_record, "client", None) else "Unknown Company"
+            )
+            notify_domain("add", company_name, request.user)
+
             return redirect("domain_records")
     else:
         form = AddDomainForm()
@@ -122,6 +152,14 @@ def update_domain_record(request, pk):
             updated_record.updated_by = request.user
             updated_record.save()
             messages.success(request, "Domain record has been updated!")
+
+            # Mattermost notification
+            company_name = (
+                updated_record.client.name
+                if getattr(updated_record, "client", None)
+                else "Unknown Company"
+            )
+            notify_domain("update", company_name, request.user)
         else:
             messages.warning(request, "No changes detected.")
 
@@ -179,14 +217,25 @@ def send_notification_domain(request):
             msg.attach_alternative(full_body, "text/html")
             msg.send(fail_silently=False)
 
+            # Send alert to Mattermost
+            send_email_alert_to_mattermost(
+                subject=subject,
+                recipient_count=len(valid_emails),
+                user_display=request.user.get_full_name() or request.user.username,
+                context="domain",
+            )
+
             messages.success(
                 request, f"Notification sent to {len(valid_emails)} recipient(s)."
             )
             return redirect("domain_records")
 
         return render(
-            request, "domain_email_notification.html", {"form": form, "emails": emails}
+            request,
+            "domain_email_notification.html",
+            {"form": form, "emails": emails},
         )
+
 
 
 @require_POST
