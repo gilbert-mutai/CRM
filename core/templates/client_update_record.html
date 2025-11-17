@@ -16,7 +16,7 @@
                 </ul>
             </div>
         {% endif %}
-        <form method="post">
+        <form method="post" id="update-form">
             {% csrf_token %}
             <!-- Render each field manually without colons -->
             <div class="mb-3">
@@ -39,6 +39,30 @@
                 <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
                 {{ form.phone_number }}
             </div>
+
+            <!-- Data center checkboxes -->
+            <div class="form-check mb-2">
+                {{ form.has_adc_services }}
+                <label class="form-check-label" for="{{ form.has_adc_services.id_for_label }}">
+                    {{ form.has_adc_services.label }}
+                </label>
+                {% if form.has_adc_services.help_text %}
+                    <div class="form-text text-muted">{{ form.has_adc_services.help_text }}</div>
+                {% endif %}
+                {{ form.has_adc_services.errors }}
+            </div>
+
+            <div class="form-check mb-3">
+                {{ form.has_icolo_services }}
+                <label class="form-check-label" for="{{ form.has_icolo_services.id_for_label }}">
+                    {{ form.has_icolo_services.label }}
+                </label>
+                {% if form.has_icolo_services.help_text %}
+                    <div class="form-text text-muted">{{ form.has_icolo_services.help_text }}</div>
+                {% endif %}
+                {{ form.has_icolo_services.errors }}
+            </div>
+
             <!-- Buttons -->
             <div class="mt-4 d-flex gap-2">
                 <button type="submit" class="btn btn-outline-primary">Update</button>
@@ -47,4 +71,63 @@
             </div>
         </form>
     </div>
+
+    <!-- Data Center Change Confirmation Modal -->
+    <div class="modal fade"
+         id="dataCenterConfirmModal"
+         tabindex="-1"
+         aria-labelledby="dataCenterConfirmLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dataCenterConfirmLabel">Confirm Data Center Change</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="dataCenterConfirmMessage">Are you sure you want to update the data center services?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmDataCenterBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const updateForm = document.getElementById('update-form');
+    const adcCheckbox = document.getElementById('{{ form.has_adc_services.id_for_label }}');
+    const icoloCheckbox = document.getElementById('{{ form.has_icolo_services.id_for_label }}');
+    const modal = new bootstrap.Modal(document.getElementById('dataCenterConfirmModal'));
+    const confirmBtn = document.getElementById('confirmDataCenterBtn');
+
+    let dataCenterChanged = false;
+
+    // Track changes to data center checkboxes
+    adcCheckbox.addEventListener('change', function() {
+        dataCenterChanged = true;
+    });
+
+    icoloCheckbox.addEventListener('change', function() {
+        dataCenterChanged = true;
+    });
+
+    // Prevent form submission and show modal if data centers changed
+    updateForm.addEventListener('submit', function(e) {
+        if (dataCenterChanged) {
+            e.preventDefault();
+            modal.show();
+        }
+    });
+
+    // Submit form when confirmed
+    confirmBtn.addEventListener('click', function() {
+        modal.hide();
+        updateForm.submit();
+    });
+});
+    </script>
 {% endblock %}

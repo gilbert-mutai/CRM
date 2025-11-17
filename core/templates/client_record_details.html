@@ -31,6 +31,23 @@
                     </th>
                     <td>{{ client_record.phone_number }}</td>
                 </tr>
+
+                <!-- Data centers row -->
+                <tr>
+                    <th scope="row">
+                        <i class="bi bi-hdd-network me-2 text-secondary"></i>Data Centers
+                    </th>
+                    <td>
+                        {% if client_record.data_centers %}
+                            {% for center in client_record.data_centers %}
+                                <span class="badge bg-primary me-1">{{ center }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                </tr>
+
                 <tr>
                     <th scope="row">
                         <i class="bi bi-calendar-plus me-2 text-muted"></i>Created On

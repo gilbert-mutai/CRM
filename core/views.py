@@ -35,42 +35,43 @@ def access_center(request):
 def client_records(request):
     query = request.GET.get("search", "").strip()
     selected_client_type = request.GET.get("client_type", "").strip()
+    selected_data_center = request.GET.get("data_center", "").strip()
 
-    clients = Client.objects.all().order_by("-last_updated", "-created_at")
+    # Start with all clients
+    clients = Client.objects.all()
 
+    # Apply search filter
     if query:
         clients = clients.filter(
-            Q(name__icontains=query) | Q(email__icontains=query) | Q(contact_person__icontains=query)
+            Q(name__icontains=query)
+            | Q(email__icontains=query)
+            | Q(contact_person__icontains=query)
+            | Q(phone_number__icontains=query)
         )
+
+    # Apply client type filter
     if selected_client_type:
         clients = clients.filter(client_type=selected_client_type)
 
-    client_types = Client.objects.values_list("client_type", flat=True).distinct()
+    # Apply data center filter
+    if selected_data_center == "ADC":
+        clients = clients.filter(has_adc_services=True)
+    elif selected_data_center == "Icolo":
+        clients = clients.filter(has_icolo_services=True)
 
-    page_size = request.GET.get("page_size", 20)
-    try:
-        page_size = int(page_size)
-        if page_size not in [20, 50, 100]:
-            page_size = 20
-    except ValueError:
-        page_size = 20
-
+    # Pagination
+    page_size = request.GET.get("page_size", 10)
     paginator = Paginator(clients, page_size)
-    page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
-
-    get_params = request.GET.copy()
-    get_params["page_size"] = str(page_size)
-    if "page" in get_params:
-        del get_params["page"]
+    page_num = request.GET.get("page", 1)
+    clients_page = paginator.get_page(page_num)
 
     context = {
-        "clients": page_obj,
-        "page_size": page_size,
+        "clients": clients_page,
         "search_query": query,
-        "client_types": client_types,
         "selected_client_type": selected_client_type,
-        "querystring": get_params.urlencode(),
+        "selected_data_center": selected_data_center,
+        "client_types": [Client.INDIVIDUAL, Client.COMPANY],
+        "page_size": page_size,
     }
     return render(request, "client_records.html", context)
 
