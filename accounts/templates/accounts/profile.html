@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>
+    {% if user.get_full_name %}
+      {{ user.get_full_name }}
+    {% else %}
+      {{ user.email }}
+    {% endif %}
+  </h2>
+  {% if user.get_full_name %}
+    <p class="text-muted mb-3"><small>{{ user.email }}</small></p>
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h5 class="mb-0">Account Settings</h5>
+    </div>
+    <div class="card-body">
+      <p><strong>2FA Status:</strong>
+        {% if user.is_2fa_enabled %}
+          <span class="badge bg-success">Enabled</span>
+        {% else %}
+          <span class="badge bg-secondary">Disabled</span>
+        {% endif %}
+      </p>
+
+      <div class="mt-4">
+        <h6 class="mb-3">Security</h6>
+        {% if user.is_2fa_enabled %}
+          <a href="{% url 'accounts:disable_2fa' %}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-shield-x me-1"></i>Disable 2FA
+          </a>
+        {% else %}
+          <a href="{% url 'accounts:setup_2fa' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-shield me-1"></i>Enable 2FA
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

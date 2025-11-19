@@ -115,7 +115,8 @@ STATIC_URL = "static/"
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-LOGIN_URL = "login"
+# Use namespaced login URL so reverse('accounts:login') works for redirects
+LOGIN_URL = 'accounts:login'
 
 
 MESSAGE_TAGS = {

@@ -1,84 +1,205 @@
 # views.py
 
-from django.shortcuts import render, redirect
+import base64
+import io
+
+from django.urls import reverse
+from django.shortcuts import HttpResponseRedirect, render, redirect, get_object_or_404
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
-from .forms import SignUpForm
+from django.views.decorators.http import require_http_methods
+from django.conf import settings
+from django.http import HttpResponseForbidden
+
+import qrcode
+
+from .forms import SignUpForm, TOTPTokenForm, Disable2FAForm
 from .utils import authenticate_user, create_inactive_user, send_confirmation_email
-from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 
+@require_http_methods(["GET", "POST"])
 def login_user(request):
+    """Handle credential step and optionally start 2FA flow."""
     if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-
+        email = request.POST.get("email", "").strip()
+        password = request.POST.get("password", "")
         user = authenticate_user(email, password)
 
-        if user is not None:
-            login(request, user)
-            messages.success(request, "You have logged in successfully!")
-            return redirect("access_center")
-        else:
-            messages.error(request, "Invalid email or password. Please try again.")
-            return redirect("login")
-    return render(request, "login.html")
+        if user is None:
+            messages.error(request, "Invalid email or password.")
+            return redirect("accounts:login")
+
+        # If user has 2FA enabled, postpone final login and ask for token
+        if getattr(user, "is_2fa_enabled", False):
+            # store backend to use later (use user.backend if set, else first configured backend)
+            backend = getattr(user, "backend", None) or settings.AUTHENTICATION_BACKENDS[0]
+            request.session["pre_2fa_user_id"] = user.pk
+            request.session["pre_2fa_backend"] = backend
+            request.session["pre_2fa_next"] = request.POST.get("next", reverse("access_center"))
+            return redirect("accounts:verify_2fa")
+
+        login(request, user)
+        messages.success(request, "Logged in successfully.")
+        return redirect(request.POST.get("next") or reverse("access_center"))
+
+    # GET
+    return render(request, "accounts/login.html")
 
 
 def logout_user(request):
     logout(request)
-    messages.warning(request, "You have been logged out!")
-    return redirect("login")
+    messages.success(request, "You have been logged out.")
+    return redirect("accounts:login")
 
 
-@login_required
+@require_http_methods(["GET", "POST"])
 def register_user(request):
-    if not (request.user.is_staff or request.user.is_superuser):
-        messages.error(request, "You are not authorized to perform this action!")
-        return redirect("login")
-
+    """Simple registration view. Uses create_inactive_user if available."""
     if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
-            email = form.cleaned_data.get("email")
-            first_name = form.cleaned_data.get("first_name")
-            last_name = form.cleaned_data.get("last_name")
-
-            user, temp_password = create_inactive_user(email, first_name, last_name)
-            send_confirmation_email(user)
-
-            messages.success(request, "User added successfully!")
-            return redirect("access_center")
+            # Prefer helper if it exists (for email confirmation flows)
+            data = form.cleaned_data
+            password = data.get("password1")
+            try:
+                user = create_inactive_user(email=data["email"], password=password, first_name=data.get("first_name", ""), last_name=data.get("last_name", ""))
+                send_confirmation_email(user)
+                messages.success(request, "Account created. Please check your email to confirm.")
+                return redirect("accounts:login")
+            except Exception:
+                # Fallback to form.save() for simple local creation
+                user = form.save(commit=False)
+                user.set_password(password)
+                user.save()
+                messages.success(request, "Account created. You can now log in.")
+                return redirect("accounts:login")
     else:
         form = SignUpForm()
+    return render(request, "accounts/register.html", {"form": form})
 
-    return render(request, "register.html", {"form": form})
 
-
+@require_http_methods(["GET", "POST"])
 def set_new_password(request, uidb64, token):
+    """Password reset confirm / set new password view."""
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = User.objects.get(pk=uid)
-    except (User.DoesNotExist, ValueError, TypeError):
+    except Exception:
         user = None
 
-    if user is not None and default_token_generator.check_token(user, token):
-        if request.method == "POST":
-            form = SetPasswordForm(user, request.POST)
-            if form.is_valid():
-                form.save()
-                user.is_active = True
-                user.save()
-                messages.success(request, "Password set successfully!")
-                return redirect("login")
-        else:
-            form = SetPasswordForm(user)
-        return render(request, "set_password.html", {"form": form})
+    if user is None or not default_token_generator.check_token(user, token):
+        messages.error(request, "The password reset link is invalid or has expired.")
+        return redirect("accounts:password_reset")
+
+    if request.method == "POST":
+        form = SetPasswordForm(user, request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Password has been reset. You may log in now.")
+            return redirect("accounts:login")
     else:
-        return render(request, "invalid_link.html")
+        form = SetPasswordForm(user)
+
+    return render(request, "accounts/set_new_password.html", {"form": form})
+
+
+def verify_2fa(request):
+    user_id = request.session.get("pre_2fa_user_id")
+    if not user_id:
+        return redirect("accounts:login")
+
+    try:
+        pending_user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        request.session.pop("pre_2fa_user_id", None)
+        return redirect("accounts:login")
+
+    # simple attempt limiter
+    attempts = request.session.get("pre_2fa_attempts", 0)
+    if attempts >= 10:
+        # lockout behavior - adjust as needed
+        request.session.pop("pre_2fa_user_id", None)
+        request.session.pop("pre_2fa_attempts", None)
+        messages.error(request, "Too many attempts. Please login again.")
+        return redirect("accounts:login")
+
+    form = TOTPTokenForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        token = form.cleaned_data["token"]
+        if getattr(pending_user, "verify_totp_token", None) and pending_user.verify_totp_token(token):
+            backend = request.session.pop("pre_2fa_backend", None) or settings.AUTHENTICATION_BACKENDS[0]
+            login(request, pending_user, backend=backend)
+            request.session.pop("pre_2fa_user_id", None)
+            request.session.pop("pre_2fa_next", None)
+            request.session.pop("pre_2fa_attempts", None)
+            messages.success(request, "Logged in with 2FA.")
+            return HttpResponseRedirect(request.session.pop("pre_2fa_next", reverse("access_center")))
+        # failed attempt
+        request.session["pre_2fa_attempts"] = attempts + 1
+        form.add_error("token", "Invalid authentication code.")
+    return render(request, "accounts/verify_2fa.html", {"form": form})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def setup_2fa(request):
+    """Show provisioning QR and confirm TOTP to enable 2FA for the logged-in user."""
+    user = request.user
+    # Ensure secret exists on user model helper
+    try:
+        user.ensure_totp_secret()
+    except RuntimeError:
+        messages.error(request, "TOTP support is not available (pyotp missing).")
+        return redirect("access_center")
+
+    uri = user.get_totp_provisioning_uri(issuer_name="Client-Manager")
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_b64 = base64.b64encode(buf.getvalue()).decode()
+    qr_data = f"data:image/png;base64,{qr_b64}"
+
+    form = TOTPTokenForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        token = form.cleaned_data["token"]
+        if user.verify_totp_token(token):
+            user.is_2fa_enabled = True
+            user.save(update_fields=["is_2fa_enabled"])
+            messages.success(request, "Two‑factor authentication enabled.")
+            return redirect("access_center")
+        form.add_error("token", "Invalid code. Please try again.")
+
+    return render(request, "accounts/setup_2fa.html", {"qr_data": qr_data, "form": form})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def disable_2fa(request):
+    """Disable 2FA after confirming the user's password."""
+    user = request.user
+    if request.method == "POST":
+        form = Disable2FAForm(user=user, data=request.POST)
+        if form.is_valid():
+            user.is_2fa_enabled = False
+            user.totp_secret = None
+            user.save(update_fields=["is_2fa_enabled", "totp_secret"])
+            messages.success(request, "Two‑factor authentication disabled.")
+            return redirect("access_center")
+    else:
+        form = Disable2FAForm(user=user)
+    return render(request, "accounts/disable_2fa.html", {"form": form})
+
+
+@login_required
+def profile(request):
+    """
+    Minimal account/profile page used by navbar link.
+    Add more details or links (enable/disable 2FA, edit profile) as needed.
+    """
+    return render(request, "accounts/profile.html", {"user": request.user})
