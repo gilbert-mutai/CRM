@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block body_class %}login-bg{% endblock %}
+{% block content %}
+<div class="vh-100 d-flex align-items-center justify-content-center">
+  <div class="register-wrapper col-11 col-sm-8 col-md-6 col-lg-4">
+    <div class="text-center mb-4">
+      <img src="{% static 'images/logo.png' %}" alt="Logo" width="100" height="100">
+    </div>
+
+    <div class="card login-card p-3">
+      <h5 class="text-center mb-3">Set up Two‑Factor Authentication</h5>
+
+      <p class="text-center">Scan the QR code below with your authenticator app (Google Authenticator, Authy, etc.) then enter the code to confirm.</p>
+
+      <div class="text-center my-3">
+        <img src="{{ qr_data }}" alt="TOTP QR" class="img-fluid" style="max-width:220px;">
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="mb-3">
+          {{ form.token.label_tag }}
+          {{ form.token }}
+          {% for err in form.token.errors %}<small class="text-danger d-block mt-1">{{ err }}</small>{% endfor %}
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-outline-primary">Confirm and Enable 2FA</button>
+          <a href="{% url 'access_center' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+      <p class="small text-muted mt-3">If you cannot scan the QR, use the secret shown in your account settings.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

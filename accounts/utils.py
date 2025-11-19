@@ -12,11 +12,14 @@ User = get_user_model()
 
 
 def authenticate_user(email, password):
-    try:
-        user_obj = User.objects.get(email=email)
-    except User.DoesNotExist:
+    """
+    Use Django's authenticate to get a user with backend set.
+    Returns user or None.
+    """
+    if not email or not password:
         return None
-    return authenticate(email=email, password=password)
+    # adjust kwargs if your auth backend expects 'username' instead of 'email'
+    return authenticate(username=email, password=password)
 
 
 def create_inactive_user(email, first_name, last_name):
