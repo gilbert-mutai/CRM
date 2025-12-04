@@ -1,0 +1,11 @@
+Hello {{ user.get_full_name|default:user.email }},
+
+Welcome to Client Manager!
+
+Please visit the link below to set your password:
+{{ activate_url }}
+
+This link will expire in 3 days.
+
+Thanks,
+Client Manager Team

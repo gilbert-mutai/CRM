@@ -1,5 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.tokens import default_token_generator
 from . import views
 
 app_name = "accounts"
@@ -12,6 +13,7 @@ urlpatterns = [
     path("verify-2fa/", views.verify_2fa, name="verify_2fa"),
     path("disable-2fa/", views.disable_2fa, name="disable_2fa"),
     path("set-password/<uidb64>/<token>/", views.set_new_password, name="set_new_password"),
+    path("resend-activation/", views.resend_activation, name="resend_activation"),
     path("profile/", views.profile, name="profile"),
 
     # Password reset flow (namespaced)

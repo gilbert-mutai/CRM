@@ -135,6 +135,10 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+# Expire activation / password reset tokens after 3 days
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 7  # 7 days in seconds  
+
+
 
 # SMTP Setup
 

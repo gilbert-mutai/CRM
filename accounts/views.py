@@ -2,6 +2,7 @@
 
 import base64
 import io
+import logging
 
 from django.urls import reverse
 from django.shortcuts import HttpResponseRedirect, render, redirect, get_object_or_404
@@ -9,18 +10,26 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import SetPasswordForm
-from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
-from django.http import HttpResponseForbidden
+from django.utils.encoding import force_bytes
+
+from django.utils import timezone
+from datetime import timedelta
 
 import qrcode
 
-from .forms import SignUpForm, TOTPTokenForm, Disable2FAForm
+from .forms import SignUpForm, TOTPTokenForm, Disable2FAForm, CustomSetPasswordForm
 from .utils import authenticate_user, create_inactive_user, send_confirmation_email
+from .token_generator import invitation_token_generator  # Add this import
+from django.contrib.auth.tokens import default_token_generator
+
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+ACTIVATION_TOKEN_EXPIRY = 3 * 24 * 60 * 60
 
 
 @require_http_methods(["GET", "POST"])
@@ -64,21 +73,29 @@ def register_user(request):
     if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
-            # Prefer helper if it exists (for email confirmation flows)
+            email = form.cleaned_data["email"].strip().lower()
+            
+            # Check if user already exists
+            if User.objects.filter(email=email).exists():
+                form.add_error("email", "An account with this email already exists.")
+                return render(request, "accounts/register.html", {"form": form})
+            
             data = form.cleaned_data
             password = data.get("password1")
             try:
-                user = create_inactive_user(email=data["email"], password=password, first_name=data.get("first_name", ""), last_name=data.get("last_name", ""))
+                user = create_inactive_user(
+                    email=email,
+                    password=password,
+                    first_name=data.get("first_name", ""),
+                    last_name=data.get("last_name", ""),
+                )
                 send_confirmation_email(user)
-                messages.success(request, "Account created. Please check your email to confirm.")
-                return redirect("accounts:login")
-            except Exception:
-                # Fallback to form.save() for simple local creation
-                user = form.save(commit=False)
-                user.set_password(password)
-                user.save()
-                messages.success(request, "Account created. You can now log in.")
-                return redirect("accounts:login")
+                messages.success(request, f"Account created for {email}. Welcome email sent.")
+                return redirect("access_center")
+            except Exception as exc:
+                logger.exception("create_inactive_user/send_confirmation_email failed")
+                messages.error(request, "Failed to create account. Please try again.")
+                return render(request, "accounts/register.html", {"form": form})
     else:
         form = SignUpForm()
     return render(request, "accounts/register.html", {"form": form})
@@ -86,28 +103,55 @@ def register_user(request):
 
 @require_http_methods(["GET", "POST"])
 def set_new_password(request, uidb64, token):
-    """Password reset confirm / set new password view."""
+    """Allow user to set password using token from email link."""
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
-        user = User.objects.get(pk=uid)
-    except Exception:
+        user = get_object_or_404(User, pk=uid)
+        user.refresh_from_db()
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
 
-    if user is None or not default_token_generator.check_token(user, token):
-        messages.error(request, "The password reset link is invalid or has expired.")
-        return redirect("accounts:password_reset")
+    # Check token validity
+    token_valid = user is not None and invitation_token_generator.check_token(user, token)
 
+    if not token_valid:
+        messages.error(request, "This link is invalid or has expired.")
+        return redirect("accounts:login")
+
+    # Token is valid, proceed with form
     if request.method == "POST":
-        form = SetPasswordForm(user, request.POST)
+        form = CustomSetPasswordForm(user, request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Password has been reset. You may log in now.")
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+            messages.success(request, "Password set successfully! You can now log in.")
             return redirect("accounts:login")
     else:
-        form = SetPasswordForm(user)
+        form = CustomSetPasswordForm(user)
 
-    return render(request, "accounts/set_new_password.html", {"form": form})
+    return render(request, "accounts/set_password.html", {"form": form})
 
+
+@require_http_methods(["GET", "POST"])
+def resend_activation(request):
+    """Allows users to request a new activation email if the old one expired or was used."""
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+        try:
+            user = User.objects.get(email=email)
+            if user.is_active:
+                messages.info(request, "Account is already active. Please login.")
+                return redirect("accounts:login")
+
+            send_confirmation_email(user)
+            messages.success(request, "A new activation email has been sent. Please check your inbox.")
+            return redirect("accounts:login")
+        except User.DoesNotExist:
+            messages.error(request, "No account found with that email.")
+            return redirect("accounts:resend_activation")
+
+    return render(request, "accounts/resend_activation.html")
 
 def verify_2fa(request):
     user_id = request.session.get("pre_2fa_user_id")
