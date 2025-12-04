@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Resend Activation Email</h2>
+<form method="post">
+    {% csrf_token %}
+    <p>Enter your email to receive a new activation link:</p>
+    <input type="email" name="email" required placeholder="Your email" class="form-control">
+    <button type="submit" class="btn btn-primary mt-2">Send Activation Email</button>
+</form>
+{% endblock %}
