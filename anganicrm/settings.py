@@ -17,6 +17,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 # Application definition
 
 INSTALLED_APPS = [
+    "accounts", 
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -26,12 +27,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "core",
     "threecx",
-    "accounts",
     "domains",
-    "nova",
-    "novapool4",
     "sdwan",
-    "cloudberry",
     "veeam",
     "pm",
 ]
