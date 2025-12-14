@@ -59,8 +59,8 @@ def client_records(request):
     elif selected_data_center == "Icolo":
         clients = clients.filter(has_icolo_services=True)
 
-    # Pagination
-    page_size = request.GET.get("page_size", 10)
+    # Pagination - default to 20, allow 50 and 100
+    page_size = int(request.GET.get("page_size", 20))
     paginator = Paginator(clients, page_size)
     page_num = request.GET.get("page", 1)
     clients_page = paginator.get_page(page_num)
