@@ -18,15 +18,14 @@ def home(request):
 
 
 @login_required
-def access_center(request):
+def access_center(request): 
     client_sections = [
+        {"title": "Customer Master", "url_name": "client_records", "icon": "people", "btn_class": "success"},
         {"title": "3CX", "url_name": "threecx_records", "icon": "telephone", "btn_class": "primary"},
-        {"title": "Domain & Hosting", "url_name": "domain_records", "icon": "globe", "btn_class": "success"},
-        {"title": "Nova", "url_name": "nova_records", "icon": "lightning-charge", "btn_class": "warning"},
-        {"title": "Novapool 4", "url_name": "novapool4_records", "icon": "cpu", "btn_class": "warning"},
+        {"title": "Domain & Hosting", "url_name": "domain_records", "icon": "globe", "btn_class": "warning"},
         {"title": "SD-WAN", "url_name": "sdwan_records", "icon": "diagram-3", "btn_class": "primary"},
-        {"title": "Veeam", "url_name": "veeam_records", "icon": "shield-check", "btn_class": "success"},
-        {"title": "Projects", "url_name": "pm_records", "icon": "kanban", "btn_class": "danger"},
+        {"title": "Veeam", "url_name": "veeam_records", "icon": "shield-check", "btn_class": "warning"},
+        {"title": "Projects", "url_name": "pm_records", "icon": "kanban", "btn_class": "success"},
     ]
     return render(request, "access_center.html", {"client_sections": client_sections})
 

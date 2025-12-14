@@ -28,10 +28,7 @@ INSTALLED_APPS = [
     "core",
     "threecx",
     "domains",
-    "nova",
-    "novapool4",
     "sdwan",
-    "cloudberry",
     "veeam",
     "pm",
 ]
