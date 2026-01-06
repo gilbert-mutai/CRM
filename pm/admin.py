@@ -54,7 +54,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
     # Custom display for customer email
     def get_customer_email(self, obj):
-        return obj.customer_name.email
+        return obj.customer_name.primary_email
 
     get_customer_email.short_description = "Email Address"
 

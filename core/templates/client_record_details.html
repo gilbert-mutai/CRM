@@ -15,9 +15,15 @@
                 </tr>
                 <tr>
                     <th scope="row">
-                        <i class="bi bi-envelope-fill me-2 text-secondary"></i>Email
+                        <i class="bi bi-envelope-fill me-2 text-secondary"></i>Primary Email
                     </th>
-                    <td class="email">{{ client_record.email }}</td>
+                    <td class="email">{{ client_record.primary_email }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <i class="bi bi-envelope me-2 text-secondary"></i>Secondary Email
+                    </th>
+                    <td class="email">{{ client_record.secondary_email|default:"-" }}</td>
                 </tr>
                 <tr>
                     <th scope="row">
@@ -32,15 +38,15 @@
                     <td>{{ client_record.phone_number }}</td>
                 </tr>
 
-                <!-- Data centers row -->
+                <!-- Point of Presence row -->
                 <tr>
                     <th scope="row">
-                        <i class="bi bi-hdd-network me-2 text-secondary"></i>Data Centers
+                        <i class="bi bi-hdd-network me-2 text-secondary"></i>Point of Presence
                     </th>
                     <td>
                         {% if client_record.data_centers %}
-                            {% for center in client_record.data_centers %}
-                                <span class="badge bg-primary me-1">{{ center }}</span>
+                            {% for pop in client_record.data_centers %}
+                                <span class="badge bg-primary me-1">{{ pop }}</span>
                             {% endfor %}
                         {% else %}
                             <span class="text-muted">None</span>

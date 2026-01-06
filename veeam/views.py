@@ -52,7 +52,7 @@ def veeam_records(request):
     status_filter = request.GET.get("job_status", "")
 
     records = VeeamJob.objects.select_related("client").order_by(
-        "client__name", "client__email", "id"
+        "client__name", "client__primary_email", "id"
     )
 
     if query:
@@ -188,7 +188,12 @@ def send_notification_veeam(request):
             return redirect("veeam_records")
 
         clients = Client.objects.filter(id__in=company_ids)
-        emails = [c.email for c in clients if c.email]
+        emails = []
+        for c in clients:
+            if c.primary_email:
+                emails.append(c.primary_email)
+            if c.secondary_email:
+                emails.append(c.secondary_email)
 
         if not emails:
             messages.error(request, "Selected companies have no valid emails.")
@@ -265,8 +270,9 @@ def export_selected_records(request):
         [
             "ID",
             "Company Name",
-            "Email",
-            "Phone",
+            "Primary Email",
+            "Secondary Email",
+            "Phone Number",
             "Contact Person",
             "Created on",
             "Last Updated",
@@ -278,7 +284,8 @@ def export_selected_records(request):
             [
                 c.id,
                 c.name,
-                c.email,
+                c.primary_email,
+                c.secondary_email or "",
                 getattr(c, "phone_number", ""),
                 getattr(c, "contact_person", ""),
                 (

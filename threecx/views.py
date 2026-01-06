@@ -48,7 +48,8 @@ def threecx_records(request):
     if query:
         records = records.filter(
             Q(client__name__icontains=query)
-            | Q(client__email__icontains=query)
+            | Q(client__primary_email__icontains=query)
+            | Q(client__secondary_email__icontains=query)
             | Q(fqdn__icontains=query)
         )
 
@@ -257,7 +258,8 @@ def export_selected_threecx_records(request):
         [
             "Company Name",
             "Contact Person",
-            "Email",
+            "Primary Email",
+            "Secondary Email",
             "Phone Number",
             "SIP Provider",
             "FQDN",
@@ -271,7 +273,8 @@ def export_selected_threecx_records(request):
             [
                 rec.client.name,
                 rec.client.contact_person,
-                rec.client.email,
+                rec.client.primary_email,
+                rec.client.secondary_email or "",
                 rec.client.phone_number,
                 rec.get_sip_provider_display(),
                 rec.fqdn,

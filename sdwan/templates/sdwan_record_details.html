@@ -24,8 +24,12 @@
                     <td>{{ customer_record.client.contact_person|default:"-" }}</td>
                 </tr>
                 <tr>
-                    <th><i class="bi bi-envelope-fill me-2 text-secondary"></i>Email</th>
-                    <td class="email">{{ customer_record.client.email }}</td>
+                    <th><i class="bi bi-envelope-fill me-2 text-secondary"></i>Primary Email</th>
+                    <td class="email">{{ customer_record.client.primary_email }}</td>
+                </tr>
+                <tr>
+                    <th><i class="bi bi-envelope me-2 text-secondary"></i>Secondary Email</th>
+                    <td class="email">{{ customer_record.client.secondary_email|default:"-" }}</td>
                 </tr>
                 <tr>
                     <th><i class="bi bi-telephone-fill me-2 text-secondary"></i>Phone</th>

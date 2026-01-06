@@ -54,7 +54,7 @@ def sdwan_records(request):
     provider_filter = request.GET.get("provider", "")
 
     records = SDWAN.objects.select_related("client").order_by(
-        "client__name", "client__email", "id"
+        "client__name", "client__primary_email", "id"
     )
 
     if query:
@@ -183,7 +183,12 @@ def send_notification_sdwan(request):
             return redirect("sdwan_records")
 
         clients = Client.objects.filter(id__in=company_ids)
-        emails = [c.email for c in clients if c.email]
+        emails = []
+        for c in clients:
+            if c.primary_email:
+                emails.append(c.primary_email)
+            if c.secondary_email:
+                emails.append(c.secondary_email)
 
         if not emails:
             messages.error(request, "Selected companies have no valid emails.")
@@ -263,7 +268,8 @@ def export_selected_sdwan_records(request):
             "Account Number",
             "Provider",
             "Contact Person",
-            "Email",
+            "Primary Email",
+            "Secondary Email",
             "Phone",
             "Created on",
             "Last Updated",
@@ -278,7 +284,8 @@ def export_selected_sdwan_records(request):
                 sdwan.account_number,
                 sdwan.provider,
                 sdwan.client.contact_person,
-                sdwan.client.email,
+                sdwan.client.primary_email,
+                sdwan.client.secondary_email or "",
                 sdwan.client.phone_number,
                 sdwan.created_at.strftime("%Y-%m-%d"),
                 sdwan.last_updated.strftime("%Y-%m-%d"),
