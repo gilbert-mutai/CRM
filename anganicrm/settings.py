@@ -137,15 +137,15 @@ PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 7  # 7 days in seconds
 
 
 
-# SMTP Setup
+# Email Setup - OAuth2 with Microsoft Graph API
+EMAIL_BACKEND = "core.oauth2_email_backend.OAuth2EmailBackend"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")  # The email address that will send emails
+DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp-mail.outlook.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER") 
+# OAuth2 Credentials for Microsoft Graph API
+OAUTH2_CLIENT_ID = os.getenv("OAUTH2_CLIENT_ID")
+OAUTH2_CLIENT_SECRET = os.getenv("OAUTH2_CLIENT_SECRET")
+OAUTH2_TENANT_ID = os.getenv("OAUTH2_TENANT_ID") 
 
 
 MATTERMOST_WEBHOOK_URL = os.getenv("MATTERMOST_WEBHOOK_URL")
