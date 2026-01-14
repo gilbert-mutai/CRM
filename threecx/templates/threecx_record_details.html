@@ -23,9 +23,15 @@
                 </tr>
                 <tr>
                     <th scope="row">
-                        <i class="bi bi-envelope-fill me-2 text-secondary"></i>Email
+                        <i class="bi bi-envelope-fill me-2 text-secondary"></i>Primary Email
                     </th>
-                    <td class="email">{{ customer_record.client.email }}</td>
+                    <td class="email">{{ customer_record.client.primary_email }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <i class="bi bi-envelope me-2 text-secondary"></i>Secondary Email
+                    </th>
+                    <td class="email">{{ customer_record.client.secondary_email|default:"-" }}</td>
                 </tr>
                 <!-- 3CX Details -->
                 <tr>

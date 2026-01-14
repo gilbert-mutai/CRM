@@ -34,16 +34,17 @@ def access_center(request):
 def client_records(request):
     query = request.GET.get("search", "").strip()
     selected_client_type = request.GET.get("client_type", "").strip()
-    selected_data_center = request.GET.get("data_center", "").strip()
+    selected_pop = request.GET.get("pop", "").strip()
 
-    # Start with all clients
-    clients = Client.objects.all()
+    # Start with all clients - ordered by name for consistent pagination
+    clients = Client.objects.all().order_by('name', 'id')
 
     # Apply search filter
     if query:
         clients = clients.filter(
             Q(name__icontains=query)
-            | Q(email__icontains=query)
+            | Q(primary_email__icontains=query)
+            | Q(secondary_email__icontains=query)
             | Q(contact_person__icontains=query)
             | Q(phone_number__icontains=query)
         )
@@ -52,11 +53,9 @@ def client_records(request):
     if selected_client_type:
         clients = clients.filter(client_type=selected_client_type)
 
-    # Apply data center filter
-    if selected_data_center == "ADC":
-        clients = clients.filter(has_adc_services=True)
-    elif selected_data_center == "Icolo":
-        clients = clients.filter(has_icolo_services=True)
+    # Apply Point of Presence filter
+    if selected_pop:
+        clients = clients.filter(point_of_presence__contains=selected_pop)
 
     # Pagination - default to 20, allow 50 and 100
     page_size = int(request.GET.get("page_size", 20))
@@ -68,8 +67,9 @@ def client_records(request):
         "clients": clients_page,
         "search_query": query,
         "selected_client_type": selected_client_type,
-        "selected_data_center": selected_data_center,
+        "selected_pop": selected_pop,
         "client_types": [Client.INDIVIDUAL, Client.COMPANY],
+        "pop_choices": Client.POP_CHOICES,
         "page_size": page_size,
     }
     return render(request, "client_records.html", context)

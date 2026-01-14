@@ -66,7 +66,8 @@
                     <th>Company/Username</th>
                     <th>Account Number</th>
                     <th>Contact Person</th>
-                    <th>Email</th>
+                    <th>Primary Email</th>
+                    <th>Secondary Email</th>
                     <th>Phone</th>
                     <th>Provider</th>
                     <th>Details</th>
@@ -82,7 +83,7 @@
                                    class="company-checkbox"
                                    value="{{ group.grouper.id }}">
                         </td>
-                        <td colspan="7" class="fw-bold">{{ group.grouper.name }}</td>
+                        <td colspan="8" class="fw-bold">{{ group.grouper.name }}</td>
                     </tr>
                     {% for record in group.list %}
                         <tr data-href="{% url 'sdwan_record' record.id %}"
@@ -92,7 +93,8 @@
                             <td>{{ record.client.name }}</td>
                             <td>{{ record.account_number }}</td>
                             <td>{{ record.client.contact_person }}</td>
-                            <td>{{ record.client.email }}</td>
+                            <td>{{ record.client.primary_email }}</td>
+                            <td>{{ record.client.secondary_email|default:"-" }}</td>
                             <td>{{ record.client.phone_number }}</td>
                             <td>{{ record.provider }}</td>
                             <td>
@@ -103,7 +105,7 @@
                     {% endfor %}
                 {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center">No records found.</td>
+                        <td colspan="9" class="text-center">No records found.</td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -81,7 +81,8 @@
                     </th>
                     <th scope="col">Company/Username</th>
                     <th scope="col">Contact Person</th>
-                    <th scope="col">Email</th>
+                    <th scope="col">Primary Email</th>
+                    <th scope="col">Secondary Email</th>
                     <th scope="col">SIP Provider</th>
                     <th scope="col">FQDN</th>
                     <th scope="col">License Type</th>
@@ -99,12 +100,14 @@
                             <input type="checkbox"
                                    class="record-checkbox"
                                    data-record-id="{{ record.id }}"
-                                   data-email="{{ record.client.email }}"
+                                   data-primary-email="{{ record.client.primary_email }}"
+                                   data-secondary-email="{{ record.client.secondary_email }}"
                                    aria-label="Select {{ record.client.name }}" />
                         </td>
                         <td>{{ record.client.name }}</td>
                         <td>{{ record.client.contact_person }}</td>
-                        <td>{{ record.client.email }}</td>
+                        <td>{{ record.client.primary_email }}</td>
+                        <td>{{ record.client.secondary_email|default:"-" }}</td>
                         <td>{{ record.get_sip_provider_display }}</td>
                         <td>{{ record.fqdn }}</td>
                         <td>{{ record.get_license_type_display }}</td>
@@ -117,7 +120,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center">No records found.</td>
+                        <td colspan="10" class="text-center">No records found.</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -292,7 +295,13 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
         emailsToSend = Array.from(selectedCheckboxes)
-                            .map(cb => cb.dataset.email)
+                            .flatMap(cb => {
+                                const emails = [cb.dataset.primaryEmail];
+                                if (cb.dataset.secondaryEmail && cb.dataset.secondaryEmail !== '') {
+                                    emails.push(cb.dataset.secondaryEmail);
+                                }
+                                return emails;
+                            })
                             .filter(email => email);
         selectedCountSpan.textContent = emailsToSend.length;
         confirmSendModal.show();

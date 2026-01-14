@@ -29,13 +29,13 @@ def generate_csv_for_selected_emails(emails):
     """
     Generates a CSV file response containing full client records for selected emails.
     """
-    clients = Client.objects.filter(email__in=emails)
+    clients = Client.objects.filter(primary_email__in=emails)
 
     buffer = StringIO()
     writer = csv.writer(buffer)
 
     # Write header
-    writer.writerow(["Name", "Client Type", "Contact Person", "Email", "Phone Number"])
+    writer.writerow(["Name", "Client Type", "Contact Person", "Primary Email", "Secondary Email", "Phone Number"])
 
     # Write client data
     for client in clients:
@@ -44,7 +44,8 @@ def generate_csv_for_selected_emails(emails):
                 client.name,
                 client.client_type,
                 client.contact_person,
-                client.email,
+                client.primary_email,
+                client.secondary_email or "",
                 client.phone_number,
             ]
         )

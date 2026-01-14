@@ -45,14 +45,15 @@
                     </select>
                 </div>
 
-                <!-- Data Center filter -->
-                <div class="col-auto" style="min-width: 160px;">
-                    <select name="data_center"
-                            id="data-center-filter"
+                <!-- Point of Presence filter -->
+                <div class="col-auto" style="min-width: 180px;">
+                    <select name="pop"
+                            id="pop-filter"
                             class="form-select form-select-sm">
-                        <option value="">All Data Centers</option>
-                        <option value="ADC" {% if selected_data_center == "ADC" %}selected{% endif %}>ADC</option>
-                        <option value="Icolo" {% if selected_data_center == "Icolo" %}selected{% endif %}>Icolo</option>
+                        <option value="">All POPs</option>
+                        {% for pop_key, pop_label in pop_choices %}
+                            <option value="{{ pop_key }}" {% if selected_pop == pop_key %}selected{% endif %}>{{ pop_label }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-auto ms-auto">
@@ -79,7 +80,8 @@
                         <th>Company/Username</th>
                         <th>Client Type</th>
                         <th>Contact Person</th>
-                        <th>Email</th>
+                        <th>Primary Email</th>
+                        <th>Secondary Email</th>
                         <th>Phone Number</th>
                         <th>Details</th>
                     </tr>
@@ -88,12 +90,15 @@
                     {% for client in clients %}
                         <tr data-href="{% url 'client_record' client.id %}" tabindex="0">
                             <td>
-                                <input type="checkbox" class="record-checkbox" value="{{ client.email }}" />
+                                <input type="checkbox" class="record-checkbox" 
+                                       data-primary-email="{{ client.primary_email }}" 
+                                       data-secondary-email="{{ client.secondary_email }}" />
                             </td>
                             <td>{{ client.name }}</td>
                             <td>{{ client.client_type }}</td>
                             <td>{{ client.contact_person }}</td>
-                            <td>{{ client.email }}</td>
+                            <td>{{ client.primary_email }}</td>
+                            <td>{{ client.secondary_email|default:"-" }}</td>
                             <td>{{ client.phone_number }}</td>
                             <td>
                                 <a href="{% url 'client_record' client.id %}"
@@ -102,7 +107,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center">No clients found.</td>
+                            <td colspan="8" class="text-center">No clients found.</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -204,13 +209,13 @@
   const searchForm = document.getElementById('search-filter-form');
   const searchInput = document.getElementById('search-input');
   const clientTypeFilter = document.getElementById('client-type-filter');
-  const dataCenterFilter = document.getElementById('data-center-filter');
+  const popFilter = document.getElementById('pop-filter');
 
   clientTypeFilter.addEventListener('change', () => {
     searchForm.submit();
   });
 
-  dataCenterFilter.addEventListener('change', () => {
+  popFilter.addEventListener('change', () => {
     searchForm.submit();
   });
 
@@ -248,7 +253,13 @@
   document.getElementById('export-selected').addEventListener('click', function(event) {
     event.preventDefault();
     const selectedEmails = Array.from(document.querySelectorAll('.record-checkbox:checked'))
-                                .map(cb => cb.value)
+                                .flatMap(cb => {
+                                  const emails = [cb.dataset.primaryEmail];
+                                  if (cb.dataset.secondaryEmail && cb.dataset.secondaryEmail !== '') {
+                                    emails.push(cb.dataset.secondaryEmail);
+                                  }
+                                  return emails;
+                                })
                                 .join(',');
 
     if (!selectedEmails) {
@@ -265,7 +276,13 @@
   document.getElementById('send-notification').addEventListener('click', function(e) {
     e.preventDefault();
     selectedNotificationEmails = Array.from(document.querySelectorAll('.record-checkbox:checked'))
-                                      .map(cb => cb.value);
+                                      .flatMap(cb => {
+                                        const emails = [cb.dataset.primaryEmail];
+                                        if (cb.dataset.secondaryEmail && cb.dataset.secondaryEmail !== '') {
+                                          emails.push(cb.dataset.secondaryEmail);
+                                        }
+                                        return emails;
+                                      });
 
     if (selectedNotificationEmails.length === 0) {
       alert("Please select at least one client to send notification.");

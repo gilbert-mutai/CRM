@@ -32,35 +32,57 @@
                 {{ form.contact_person }}
             </div>
             <div class="mb-3">
-                <label for="{{ form.email.id_for_label }}">Email Address</label>
-                {{ form.email }}
+                <label for="{{ form.primary_email.id_for_label }}">Primary Email Address</label>
+                {{ form.primary_email }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.secondary_email.id_for_label }}">Secondary Email Address</label>
+                {{ form.secondary_email }}
             </div>
             <div class="mb-3">
                 <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
                 {{ form.phone_number }}
             </div>
 
-            <!-- Data center checkboxes -->
-            <div class="form-check mb-2">
-                {{ form.has_adc_services }}
-                <label class="form-check-label" for="{{ form.has_adc_services.id_for_label }}">
-                    {{ form.has_adc_services.label }}
-                </label>
-                {% if form.has_adc_services.help_text %}
-                    <div class="form-text text-muted">{{ form.has_adc_services.help_text }}</div>
-                {% endif %}
-                {{ form.has_adc_services.errors }}
-            </div>
-
-            <div class="form-check mb-3">
-                {{ form.has_icolo_services }}
-                <label class="form-check-label" for="{{ form.has_icolo_services.id_for_label }}">
-                    {{ form.has_icolo_services.label }}
-                </label>
-                {% if form.has_icolo_services.help_text %}
-                    <div class="form-text text-muted">{{ form.has_icolo_services.help_text }}</div>
-                {% endif %}
-                {{ form.has_icolo_services.errors }}
+            <!-- Point of Presence checkboxes -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Point of Presence (POP)</label>
+                <div class="form-check">
+                    {{ form.pop_adc_nbo }}
+                    <label class="form-check-label" for="{{ form.pop_adc_nbo.id_for_label }}">
+                        {{ form.pop_adc_nbo.label }}
+                    </label>
+                </div>
+                <div class="form-check">
+                    {{ form.pop_icolo_nbo }}
+                    <label class="form-check-label" for="{{ form.pop_icolo_nbo.id_for_label }}">
+                        {{ form.pop_icolo_nbo.label }}
+                    </label>
+                </div>
+                <div class="form-check">
+                    {{ form.pop_icolo_mbo }}
+                    <label class="form-check-label" for="{{ form.pop_icolo_mbo.id_for_label }}">
+                        {{ form.pop_icolo_mbo.label }}
+                    </label>
+                </div>
+                <div class="form-check">
+                    {{ form.pop_ixafrica_nbo }}
+                    <label class="form-check-label" for="{{ form.pop_ixafrica_nbo.id_for_label }}">
+                        {{ form.pop_ixafrica_nbo.label }}
+                    </label>
+                </div>
+                <div class="form-check">
+                    {{ form.pop_raxio_ug }}
+                    <label class="form-check-label" for="{{ form.pop_raxio_ug.id_for_label }}">
+                        {{ form.pop_raxio_ug.label }}
+                    </label>
+                </div>
+                <div class="form-check">
+                    {{ form.pop_tanzania }}
+                    <label class="form-check-label" for="{{ form.pop_tanzania.id_for_label }}">
+                        {{ form.pop_tanzania.label }}
+                    </label>
+                </div>
             </div>
 
             <!-- Buttons -->
@@ -72,7 +94,7 @@
         </form>
     </div>
 
-    <!-- Data Center Change Confirmation Modal -->
+    <!-- POP Change Confirmation Modal -->
     <div class="modal fade"
          id="dataCenterConfirmModal"
          tabindex="-1"
@@ -81,11 +103,11 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="dataCenterConfirmLabel">Confirm Data Center Change</h5>
+                    <h5 class="modal-title" id="dataCenterConfirmLabel">Confirm POP Change</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p id="dataCenterConfirmMessage">Are you sure you want to update the data center services?</p>
+                    <p id="dataCenterConfirmMessage">Are you sure you want to update the Point of Presence?</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -99,25 +121,31 @@
     <script>
 document.addEventListener('DOMContentLoaded', function() {
     const updateForm = document.getElementById('update-form');
-    const adcCheckbox = document.getElementById('{{ form.has_adc_services.id_for_label }}');
-    const icoloCheckbox = document.getElementById('{{ form.has_icolo_services.id_for_label }}');
+    const popCheckboxes = [
+        document.getElementById('{{ form.pop_adc_nbo.id_for_label }}'),
+        document.getElementById('{{ form.pop_icolo_nbo.id_for_label }}'),
+        document.getElementById('{{ form.pop_icolo_mbo.id_for_label }}'),
+        document.getElementById('{{ form.pop_ixafrica_nbo.id_for_label }}'),
+        document.getElementById('{{ form.pop_raxio_ug.id_for_label }}'),
+        document.getElementById('{{ form.pop_tanzania.id_for_label }}')
+    ];
     const modal = new bootstrap.Modal(document.getElementById('dataCenterConfirmModal'));
     const confirmBtn = document.getElementById('confirmDataCenterBtn');
 
-    let dataCenterChanged = false;
+    let popChanged = false;
 
-    // Track changes to data center checkboxes
-    adcCheckbox.addEventListener('change', function() {
-        dataCenterChanged = true;
+    // Track changes to POP checkboxes
+    popCheckboxes.forEach(checkbox => {
+        if (checkbox) {
+            checkbox.addEventListener('change', function() {
+                popChanged = true;
+            });
+        }
     });
 
-    icoloCheckbox.addEventListener('change', function() {
-        dataCenterChanged = true;
-    });
-
-    // Prevent form submission and show modal if data centers changed
+    // Prevent form submission and show modal if POPs changed
     updateForm.addEventListener('submit', function(e) {
-        if (dataCenterChanged) {
+        if (popChanged) {
             e.preventDefault();
             modal.show();
         }

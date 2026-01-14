@@ -20,7 +20,7 @@ class ThreeCXAdmin(admin.ModelAdmin):
     list_filter = ("sip_provider", "license_type")
 
     # Searchable fields
-    search_fields = ("client__name", "client__email", "client__phone_number")
+    search_fields = ("client__name", "client__primary_email", "client__secondary_email", "client__phone_number")
 
     # Read-only timestamp fields
     readonly_fields = ("created_at", "last_updated")
@@ -43,7 +43,7 @@ class ThreeCXAdmin(admin.ModelAdmin):
 
     @admin.display(description="Email Address")
     def get_client_email(self, obj):
-        return obj.client.email
+        return obj.client.primary_email
 
     @admin.display(description="Phone Number")
     def get_client_phone(self, obj):

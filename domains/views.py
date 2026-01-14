@@ -43,7 +43,8 @@ def domain_records(request):
     if query:
         records = records.filter(
             Q(client__name__icontains=query)
-            | Q(client__email__icontains=query)
+            | Q(client__primary_email__icontains=query)
+            | Q(client__secondary_email__icontains=query)
             | Q(domain__icontains=query)
             | Q(host__icontains=query)
         )
@@ -184,7 +185,12 @@ def send_notification_domain(request):
     from core.models import Client
 
     clients = Client.objects.filter(id__in=client_ids)
-    emails = [c.email for c in clients if c.email]
+    emails = []
+    for c in clients:
+        if c.primary_email:
+            emails.append(c.primary_email)
+        if c.secondary_email:
+            emails.append(c.secondary_email)
 
     if request.method == "GET":
         if not emails:
@@ -256,7 +262,8 @@ def export_selected_domain_records(request):
         [
             "Company Name",
             "Contact Person",
-            "Email",
+            "Primary Email",
+            "Secondary Email",
             "Phone Number",
             "Domain",
             "Host",
@@ -269,7 +276,8 @@ def export_selected_domain_records(request):
             [
                 rec.client.name,
                 rec.client.contact_person,
-                rec.client.email,
+                rec.client.primary_email,
+                rec.client.secondary_email or "",
                 rec.client.phone_number,
                 rec.domain,
                 rec.host,
