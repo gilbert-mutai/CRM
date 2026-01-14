@@ -50,7 +50,7 @@ def send_confirmation_email(user, domain=None):
         
         user.refresh_from_db()
         
-        domain = domain or getattr(settings, "SITE_URL", "http://localhost:8000")
+        domain = domain or getattr(settings, "SITE_URL", "https://clientmanager.angani.co.ke")
         token = invitation_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         activate_url = f"{domain}{reverse('accounts:set_new_password', args=[uid, token])}"
