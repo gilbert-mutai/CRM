@@ -35,7 +35,7 @@ class BaseClientForm(forms.ModelForm):
     # Point of Presence checkboxes
     pop_adc_nbo = forms.BooleanField(required=False, label="ADC NBO")
     pop_icolo_nbo = forms.BooleanField(required=False, label="Icolo NBO")
-    pop_icolo_mbo = forms.BooleanField(required=False, label="Icolo MBO")
+    pop_icolo_mbo = forms.BooleanField(required=False, label="Icolo MBA")
     pop_ixafrica_nbo = forms.BooleanField(required=False, label="IXAfrica NBO")
     pop_raxio_ug = forms.BooleanField(required=False, label="Raxio UG")
     pop_tanzania = forms.BooleanField(required=False, label="Tanzania")

@@ -2,12 +2,14 @@
 Custom OAuth2 Email Backend for Microsoft Graph API
 Uses MSAL (Microsoft Authentication Library) to authenticate and send emails via Microsoft Graph.
 """
+import base64
 import logging
 import msal
 import requests
 from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.message import sanitize_address
+from email.mime.base import MIMEBase
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +149,42 @@ class OAuth2EmailBackend(BaseEmailBackend):
                 {"emailAddress": {"address": addr}} for addr in message.reply_to
             ]
 
-        # Note: Attachments handling can be added here if needed
-        # Microsoft Graph API supports attachments via the attachments property
+        # Handle attachments (for Microsoft Graph API)
+        attachments = []
+        for attachment in getattr(message, "attachments", []):
+            filename = None
+            content_type = "application/octet-stream"
+            content = None
+
+            if isinstance(attachment, MIMEBase):
+                filename = attachment.get_filename()
+                content_type = attachment.get_content_type() or content_type
+                content = attachment.get_payload(decode=True)
+            elif isinstance(attachment, (list, tuple)) and len(attachment) >= 2:
+                filename = attachment[0]
+                content = attachment[1]
+                if len(attachment) >= 3 and attachment[2]:
+                    content_type = attachment[2]
+
+            if not filename or content is None:
+                continue
+
+            if isinstance(content, str):
+                content_bytes = content.encode("utf-8")
+            else:
+                content_bytes = content
+
+            content_b64 = base64.b64encode(content_bytes).decode("utf-8")
+            attachments.append(
+                {
+                    "@odata.type": "#microsoft.graph.fileAttachment",
+                    "name": filename,
+                    "contentType": content_type,
+                    "contentBytes": content_b64,
+                }
+            )
+
+        if attachments:
+            email_data["message"]["attachments"] = attachments
 
         return email_data

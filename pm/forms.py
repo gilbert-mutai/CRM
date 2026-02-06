@@ -16,7 +16,10 @@ class ClientNameOnlyChoiceField(forms.ModelChoiceField):
 class EngineerNameOnlyChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         full_name = f"{obj.first_name} {obj.last_name}".strip()
-        return full_name if full_name else obj.username or obj.email
+        if full_name:
+            return full_name
+        username = getattr(obj, "username", "")
+        return username or obj.email
 
 
 # Shared Base Form
