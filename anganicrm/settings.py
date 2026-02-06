@@ -147,6 +147,18 @@ OAUTH2_CLIENT_ID = os.getenv("OAUTH2_CLIENT_ID")
 OAUTH2_CLIENT_SECRET = os.getenv("OAUTH2_CLIENT_SECRET")
 OAUTH2_TENANT_ID = os.getenv("OAUTH2_TENANT_ID") 
 
+# Completion certificate CC recipients
+if DEBUG:
+    CERTIFICATE_CC_EMAILS = [
+        "uncofits@gmail.com",
+        "gilbert@angani.co",
+    ]
+else:
+    CERTIFICATE_CC_EMAILS = [
+        "support@angani.co",
+        "salesadmin@angani.co",
+    ]
+
 
 MATTERMOST_WEBHOOK_URL = os.getenv("MATTERMOST_WEBHOOK_URL")
 MATTERMOST_CHANNEL = os.getenv("MATTERMOST_CHANNEL", "general")

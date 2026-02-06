@@ -41,4 +41,9 @@ urlpatterns = [
         views.toggle_certificate_status,
         name="toggle_certificate_status",
     ),
+    path(
+        "record/<int:pk>/certificate/share/",
+        views.share_completion_certificate,
+        name="share_completion_certificate",
+    ),
 ]

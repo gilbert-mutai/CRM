@@ -24,6 +24,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
+from django.core.mail import EmailMultiAlternatives
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.models.functions import ExtractMonth, ExtractYear
@@ -346,9 +347,7 @@ def update_project_description(request, pk):
     return JsonResponse({"service_description": new_desc})
 
 
-@login_required
-def download_completion_certificate(request, pk):
-    project = get_object_or_404(Project, pk=pk)
+def build_completion_certificate_pdf(project):
     buffer = BytesIO()
 
     doc = SimpleDocTemplate(
@@ -497,9 +496,94 @@ def download_completion_certificate(request, pk):
     safe_customer_name = customer.replace(" ", "_")
     filename = f"Job Completion Certificate - {safe_customer_name}.pdf"
 
-    response = HttpResponse(buffer, content_type="application/pdf")
+    return buffer.getvalue(), filename
+
+
+@login_required
+def download_completion_certificate(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    pdf_bytes, filename = build_completion_certificate_pdf(project)
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
+
+
+@require_POST
+@login_required
+def share_completion_certificate(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+
+    if request.user != project.engineer and not request.user.is_staff:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    if project.status != Project.STATUS_COMPLETED:
+        return JsonResponse({"error": "Project is not completed."}, status=400)
+
+    client_email = (
+        project.customer_name.primary_email
+        if project.customer_name and project.customer_name.primary_email
+        else None
+    )
+    if not client_email:
+        return JsonResponse({"error": "Client primary email not available."}, status=400)
+
+    pdf_bytes, filename = build_completion_certificate_pdf(project)
+
+    subject = f"Job Completion Certificate - {project.customer_name.name}"
+    recipient_name = project.customer_name.contact_person or project.customer_name.name
+    body_text = (
+        f"Dear {recipient_name},\n\n"
+        "I hope this message finds you well.\n\n"
+        "Thank you for choosing Angani Services.\n\n"
+        "Please find attached the job completion form for your review. Kindly sign, "
+        "stamp, and return it at your earliest convenience.\n\n"
+        "Should you have any questions or require further clarification, please feel free to reach out.\n\n"
+        "Thank you, and we look forward to your response.\n\n"
+        "Regards,\n\n"
+        "Support, Angani Ltd\n"
+        "Website: www.angani.co\n"
+        "Mob: +254207650028\n"
+        "West Point Building, 1st Floor,\n"
+        "Mpaka Road, Nairobi"
+    )
+    body_html = (
+        f"Dear {recipient_name},<br><br>"
+        "I hope this message finds you well.<br><br>"
+        "Thank you for choosing Angani Services.<br><br>"
+        "Please find attached the job completion form for your review. Kindly sign, "
+        "stamp, and return it at your earliest convenience.<br><br>"
+        "Should you have any questions or require further clarification, please feel free to reach out.<br><br>"
+        "Thank you, and we look forward to your response.<br><br>"
+        "Regards,<br><br>"
+        "Support, Angani Ltd<br>"
+        "Website: www.angani.co<br>"
+        "Mob: +254207650028<br>"
+        "West Point Building, 1st Floor,<br>"
+        "Mpaka Road, Nairobi"
+    )
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=body_text,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[client_email],
+        cc=[email for email in settings.CERTIFICATE_CC_EMAILS if email],
+    )
+    msg.attach_alternative(body_html, "text/html")
+    msg.attach(filename, pdf_bytes, "application/pdf")
+    msg.send(fail_silently=False)
+
+    project.job_completion_certificate = Project.CERT_SHARED
+    project.save(update_fields=["job_completion_certificate"])
+
+    return JsonResponse(
+        {
+            "success": True,
+            "certificate_status": project.job_completion_certificate,
+            "certificate_status_display": project.get_job_completion_certificate_display(),
+        }
+    )
 
 
 @csrf_exempt

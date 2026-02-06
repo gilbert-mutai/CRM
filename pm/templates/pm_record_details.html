@@ -84,13 +84,18 @@
                         {% if user == project.engineer or user.is_staff %}
                             {% if project.status == 'Completed' %}
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input"
-                                               type="checkbox"
-                                               id="certificateToggle"
-                                               {% if project.job_completion_certificate == 'Shared' %}checked{% endif %}>
-                                    </div>
-                                    <span id="certificate-status-label">{{ project.get_job_completion_certificate_display }}</span>
+                            <span id="certificate-status-label"
+                                class="badge {% if project.job_completion_certificate == 'Shared' %}bg-primary{% else %}bg-warning text-dark{% endif %} px-3"
+                                style="min-width: 100px; display: inline-block; text-align: center">
+                              {{ project.get_job_completion_certificate_display }}
+                            </span>
+                                <button id="share-certificate-btn"
+                                  data-url="{% url 'share_completion_certificate' project.id %}"
+                                  class="btn btn-sm btn-outline-primary"
+                                  {% if project.job_completion_certificate == 'Shared' %}disabled{% endif %}>
+                              <i class="bi bi-envelope"></i>
+                              Share to Client
+                            </button>
                                     <button id="download-btn"
                                             data-url="{% url 'download_completion_certificate' project.id %}"
                                             class="btn btn-sm btn-outline-secondary">
@@ -161,64 +166,126 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // === STATUS TOGGLE ===
   const statusToggle = document.getElementById("statusToggle");
+  const completionModalEl = document.getElementById("confirmCompleteModal");
+  const confirmCompleteBtn = document.getElementById("confirm-complete-btn");
+  const completionModal = completionModalEl ? new bootstrap.Modal(completionModalEl) : null;
+  const certificateModalEl = document.getElementById("confirmCertificateModal");
+  const confirmCertificateBtn = document.getElementById("confirm-certificate-btn");
+  const certificateModal = certificateModalEl ? new bootstrap.Modal(certificateModalEl) : null;
+
+  function updateStatus(newStatus) {
+    fetch("{% url 'toggle_project_status' project.id %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrfToken,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+      document.querySelector("label[for='statusToggle']").textContent = data.status_display;
+      document.getElementById("completion-date-cell").textContent = data.completion_date || "-";
+      const certCell = document.getElementById("certificate-cell");
+      if (newStatus === "Completed") {
+        certCell.innerHTML = `
+          <div class="d-flex align-items-center gap-2">
+            <span id="certificate-status-label" class="badge bg-warning text-dark px-3" style="min-width: 100px; display: inline-block; text-align: center">Pending</span>
+            <button id="share-certificate-btn" data-url="{% url 'share_completion_certificate' project.id %}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-envelope"></i> Share to Client
+            </button>
+            <button id="download-btn" data-url="{% url 'download_completion_certificate' project.id %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-download"></i>
+            </button>
+          </div>
+        `;
+        setupCertificateToggle();
+      } else {
+        certCell.innerHTML = "-";
+      }
+    });
+  }
+
   if (statusToggle) {
+    let lastChecked = statusToggle.checked;
+
+    if (statusToggle.checked) {
+      statusToggle.disabled = true;
+    }
+
     statusToggle.addEventListener("change", function () {
       const newStatus = this.checked ? "Completed" : "Pending";
-      fetch("{% url 'toggle_project_status' project.id %}", {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ status: newStatus })
-      })
-      .then(response => response.json())
-      .then(data => {
-        document.querySelector("label[for='statusToggle']").textContent = data.status_display;
-        document.getElementById("completion-date-cell").textContent = data.completion_date || "-";
-        const certCell = document.getElementById("certificate-cell");
-        if (newStatus === "Completed") {
-          certCell.innerHTML = `
-            <div class="d-flex align-items-center gap-2">
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="certificateToggle">
-              </div>
-              <span id="certificate-status-label">Pending</span>
-              <button id="download-btn" data-url="{% url 'download_completion_certificate' project.id %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-download"></i>
-              </button>
-            </div>
-          `;
-          setupCertificateToggle();
-        } else {
-          certCell.innerHTML = "-";
-        }
-      });
+
+      if (newStatus === "Completed" && completionModal) {
+        this.checked = lastChecked;
+        completionModal.show();
+        return;
+      }
+
+      updateStatus(newStatus);
+      lastChecked = this.checked;
+
+      if (newStatus === "Completed") {
+        statusToggle.disabled = true;
+      }
     });
+
+    if (confirmCompleteBtn) {
+      confirmCompleteBtn.addEventListener("click", function () {
+        statusToggle.checked = true;
+        updateStatus("Completed");
+        lastChecked = true;
+        statusToggle.disabled = true;
+        completionModal.hide();
+      });
+    }
   }
 
   // === CERTIFICATE TOGGLE ===
   function setupCertificateToggle() {
-    const certToggle = document.getElementById("certificateToggle");
+    const shareBtn = document.getElementById("share-certificate-btn");
     const certLabel = document.getElementById("certificate-status-label");
     const downloadBtn = document.getElementById("download-btn");
 
-    if (certToggle && certLabel) {
-      certToggle.addEventListener("change", function () {
-        const certStatus = this.checked ? "Shared" : "Pending";
-        fetch("{% url 'toggle_certificate_status' project.id %}", {
-          method: "POST",
-          headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ certificate_status: certStatus })
-        })
-        .then(res => res.json())
-        .then(data => {
-          certLabel.textContent = data.certificate_status_display;
-        });
+    function sendCertificate() {
+      if (!shareBtn) {
+        return;
+      }
+      fetch(shareBtn.dataset.url, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "Content-Type": "application/json"
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
+        certLabel.textContent = data.certificate_status_display;
+        certLabel.classList.remove("bg-warning", "text-dark");
+        certLabel.classList.add("bg-primary");
+        shareBtn.disabled = true;
       });
+    }
+
+    if (shareBtn) {
+      shareBtn.addEventListener("click", function () {
+        if (certificateModal) {
+          certificateModal.show();
+        } else {
+          sendCertificate();
+        }
+      });
+
+      if (confirmCertificateBtn) {
+        confirmCertificateBtn.addEventListener("click", function () {
+          sendCertificate();
+          certificateModal.hide();
+        });
+      }
     }
 
     if (downloadBtn) {
@@ -419,6 +486,56 @@ commentSave.addEventListener("click", () => {
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-danger">Yes, delete</button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- === Mark Complete Confirmation Modal === -->
+    <div class="modal fade"
+         id="confirmCompleteModal"
+         tabindex="-1"
+         aria-labelledby="confirmCompleteLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="confirmCompleteLabel">Confirm Completion</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to mark this project as complete? This action is irreversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirm-complete-btn">Yes, mark complete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- === Certificate Status Confirmation Modal === -->
+    <div class="modal fade"
+         id="confirmCertificateModal"
+         tabindex="-1"
+         aria-labelledby="confirmCertificateLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="confirmCertificateLabel">Confirm Certificate Sharing</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <p>By clicking confirm, the Job Completion Certificate will be shared with the client via the primary email.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirm-certificate-btn">Confirm</button>
                 </div>
             </div>
         </div>
