@@ -8,7 +8,7 @@ class CustomUserAdmin(UserAdmin):
     model = CustomUser
     add_form = SignUpForm
 
-    list_display = ("email", "first_name", "last_name", "is_staff")
+    list_display = ("email", "first_name", "last_name", "is_staff", "is_2fa_enabled", "is_2fa_required")
     ordering = ("email",)
     search_fields = ("email",)
 
@@ -22,6 +22,8 @@ class CustomUserAdmin(UserAdmin):
                     "is_active",
                     "is_staff",
                     "is_superuser",
+                    "is_2fa_required",
+                    "is_2fa_enabled",
                     "groups",
                     "user_permissions",
                 )
@@ -45,6 +47,7 @@ class CustomUserAdmin(UserAdmin):
                     "is_active",
                     "is_staff",
                     "is_superuser",
+                    "is_2fa_required",
                     "groups",
                 ),
             },

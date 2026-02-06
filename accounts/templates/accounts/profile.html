@@ -28,9 +28,11 @@
       <div class="mt-4">
         <h6 class="mb-3">Security</h6>
         {% if user.is_2fa_enabled %}
-          <a href="{% url 'accounts:disable_2fa' %}" class="btn btn-outline-danger btn-sm">
-            <i class="bi bi-shield-x me-1"></i>Disable 2FA
-          </a>
+          {% if not user.is_2fa_required %}
+            <a href="{% url 'accounts:disable_2fa' %}" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-shield-x me-1"></i>Disable 2FA
+            </a>
+          {% endif %}
         {% else %}
           <a href="{% url 'accounts:setup_2fa' %}" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-shield me-1"></i>Enable 2FA
