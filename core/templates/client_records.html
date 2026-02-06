@@ -81,7 +81,6 @@
                         <th>Client Type</th>
                         <th>Contact Person</th>
                         <th>Primary Email</th>
-                        <th>Secondary Email</th>
                         <th>Phone Number</th>
                         <th>Details</th>
                     </tr>
@@ -98,7 +97,6 @@
                             <td>{{ client.client_type }}</td>
                             <td>{{ client.contact_person }}</td>
                             <td>{{ client.primary_email }}</td>
-                            <td>{{ client.secondary_email|default:"-" }}</td>
                             <td>{{ client.phone_number }}</td>
                             <td>
                                 <a href="{% url 'client_record' client.id %}"
