@@ -44,6 +44,12 @@ def login_user(request):
             messages.error(request, "Invalid email or password.")
             return redirect("accounts:login")
 
+        # If admin requires 2FA but user has not enabled it, force setup after login
+        if getattr(user, "is_2fa_required", False) and not getattr(user, "is_2fa_enabled", False):
+            login(request, user)
+            request.session["force_2fa_next"] = request.POST.get("next", reverse("access_center"))
+            return redirect("accounts:setup_2fa")
+
         # If user has 2FA enabled, postpone final login and ask for token
         if getattr(user, "is_2fa_enabled", False):
             # store backend to use later (use user.backend if set, else first configured backend)
@@ -216,7 +222,8 @@ def setup_2fa(request):
             user.is_2fa_enabled = True
             user.save(update_fields=["is_2fa_enabled"])
             messages.success(request, "Two‑factor authentication enabled.")
-            return redirect("access_center")
+            next_url = request.session.pop("force_2fa_next", None) or reverse("access_center")
+            return redirect(next_url)
         form.add_error("token", "Invalid code. Please try again.")
 
     return render(request, "accounts/setup_2fa.html", {"qr_data": qr_data, "form": form})
@@ -227,6 +234,9 @@ def setup_2fa(request):
 def disable_2fa(request):
     """Disable 2FA after confirming the user's password."""
     user = request.user
+    if getattr(user, "is_2fa_required", False):
+        messages.error(request, "Two‑factor authentication is required for your account.")
+        return redirect("accounts:profile")
     if request.method == "POST":
         form = Disable2FAForm(user=user, data=request.POST)
         if form.is_valid():

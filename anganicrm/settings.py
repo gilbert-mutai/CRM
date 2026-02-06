@@ -39,6 +39,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.Enforce2FAMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -134,6 +135,10 @@ AUTHENTICATION_BACKENDS = [
 
 # Expire activation / password reset tokens after 3 days
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 7  # 7 days in seconds  
+
+# Session expiry: 30 minutes of inactivity
+SESSION_COOKIE_AGE = 30 * 60
+SESSION_SAVE_EVERY_REQUEST = True
 
 
 

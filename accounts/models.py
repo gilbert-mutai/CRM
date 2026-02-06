@@ -42,6 +42,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_2fa_enabled = models.BooleanField(
         default=False, help_text="Whether the user has TOTP 2FA enabled."
     )
+    is_2fa_required = models.BooleanField(
+        default=False,
+        help_text="Whether the user must enable 2FA before accessing the system.",
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
