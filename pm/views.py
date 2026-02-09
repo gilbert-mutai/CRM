@@ -531,7 +531,7 @@ def build_completion_certificate_pdf(project):
         [Paragraph("Support Engineer", value_style)],
         [Paragraph("Date", label_style)],
         [Paragraph(date_provisioned, value_style)],
-        [Paragraph("Signature (A.S)", label_style)],
+        [Paragraph("<b>Signature:</b> A.S", value_style)],
         [Paragraph("____________________________", value_style)],
     ]
 
