@@ -15,7 +15,7 @@ class Client(models.Model):
     # Point of Presence choices
     POP_ADC_NBO = "ADC NBO"
     POP_ICOLO_NBO = "Icolo NBO"
-    POP_ICOLO_MBO = "Icolo MBO"
+    POP_ICOLO_MBA = "Icolo MBA"
     POP_IXAFRICA_NBO = "IXAfrica NBO"
     POP_RAXIO_UG = "Raxio UG"
     POP_TANZANIA = "Tanzania"
@@ -23,7 +23,7 @@ class Client(models.Model):
     POP_CHOICES = [
         (POP_ADC_NBO, "ADC NBO"),
         (POP_ICOLO_NBO, "Icolo NBO"),
-        (POP_ICOLO_MBO, "Icolo MBO"),
+        (POP_ICOLO_MBA, "Icolo MBA"),
         (POP_IXAFRICA_NBO, "IXAfrica NBO"),
         (POP_RAXIO_UG, "Raxio UG"),
         (POP_TANZANIA, "Tanzania"),

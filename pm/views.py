@@ -5,10 +5,12 @@ from io import BytesIO
 
 # Third-party libraries
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
+from pdf2image import convert_from_bytes
+from PIL import Image as PilImage, ImageDraw, ImageFont
 from reportlab.platypus import (
     Table,
     TableStyle,
@@ -62,6 +64,39 @@ def notify_project(action, company_name, user):
         message = f"CRM updates: Project record for {company_name} was changed by {user_name}"
 
     send_to_mattermost(message)
+
+
+def send_project_assignment_email(project, engineer, is_reassignment=False):
+    if not engineer or not getattr(engineer, "email", None):
+        return
+
+    action_word = "re-assigned" if is_reassignment else "assigned"
+    subject = f"Project {action_word.title()} - {project.project_title}"
+    engineer_name = engineer.get_full_name() or engineer.email
+    client_name = (
+        project.customer_name.name
+        if getattr(project, "customer_name", None)
+        else "Unknown Client"
+    )
+
+    body_text = (
+        f"Hello {engineer_name},\n\n"
+        f"A project titled \"{project.project_title}\" for {client_name} has been {action_word} to you.\n\n"
+        "Regards,\n\n"
+        "Support, Angani Ltd\n"
+        "Website: www.angani.co\n"
+        "Mob: +254207650028\n"
+        "West Point Building, 1st Floor,\n"
+        "Mpaka Road, Nairobi"
+    )
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=body_text,
+        from_email="support@angani.co",
+        to=[engineer.email],
+    )
+    msg.send(fail_silently=True)
 
 
 
@@ -188,6 +223,12 @@ def add_pm_record(request):
             new_project.save()
             messages.success(request, "Project added successfully.")
 
+            send_project_assignment_email(
+                new_project,
+                new_project.engineer,
+                is_reassignment=False,
+            )
+
             # Mattermost notification
             company_name = (
                 new_project.customer_name.name
@@ -209,11 +250,19 @@ def update_pm_record(request, pk):
     if request.method == "POST":
         form = UpdateProjectForm(request.POST, instance=project)
         if form.is_valid():
+            previous_engineer_id = project.engineer_id
             updated_project = form.save(commit=False)
             if has_form_changed(form):
                 updated_project.updated_by = request.user
                 updated_project.save()
                 messages.success(request, "Project updated successfully.")
+
+                if updated_project.engineer_id != previous_engineer_id:
+                    send_project_assignment_email(
+                        updated_project,
+                        updated_project.engineer,
+                        is_reassignment=True,
+                    )
 
                 # Mattermost notification
                 company_name = (
@@ -303,10 +352,18 @@ def update_project_engineer(request, pk):
     engineer_id = data.get("engineer_id")
 
     try:
+        previous_engineer_id = project.engineer_id
         engineer = User.objects.get(pk=engineer_id)
         project.engineer = engineer
         project.updated_by = request.user
         project.save()
+
+        if project.engineer_id != previous_engineer_id:
+            send_project_assignment_email(
+                project,
+                project.engineer,
+                is_reassignment=True,
+            )
         return JsonResponse({"success": True})
     except User.DoesNotExist:
         return JsonResponse(
@@ -352,11 +409,11 @@ def build_completion_certificate_pdf(project):
 
     doc = SimpleDocTemplate(
         buffer,
-        pagesize=A4,
-        topMargin=50,
-        bottomMargin=50,
-        leftMargin=50,
-        rightMargin=50,
+        pagesize=landscape(A4),
+        topMargin=85,
+        bottomMargin=28,
+        leftMargin=35,
+        rightMargin=35,
     )
 
     # Set PDF metadata
@@ -373,41 +430,87 @@ def build_completion_certificate_pdf(project):
         name="Justify",
         parent=styles["Normal"],
         alignment=4,  # Justify
-        fontSize=10,
-        leading=14,
+        fontSize=10.5,
+        leading=15,
     )
 
-    bold_center_style = ParagraphStyle(
-        name="CenterTitle",
-        parent=styles["Heading1"],
-        fontSize=16,
-        alignment=1,  # Center
-        spaceAfter=10,
+    section_header_style = ParagraphStyle(
+        name="SectionHeader",
+        parent=styles["Heading2"],
+        fontSize=12,
+        textColor=colors.HexColor("#0F3D66"),
+        spaceBefore=6,
+        spaceAfter=6,
     )
 
     label_style = ParagraphStyle(
         name="BoldLabel",
         parent=styles["Normal"],
         fontName="Helvetica-Bold",
-        fontSize=10,
+        fontSize=9.5,
+        textColor=colors.HexColor("#1F2937"),
     )
 
     value_style = ParagraphStyle(
         name="NormalValue",
         parent=styles["Normal"],
-        fontSize=10,
+        fontSize=9.5,
+        textColor=colors.HexColor("#111827"),
     )
 
-    # Logo
-    logo_path = os.path.join(settings.BASE_DIR, "static/images/logo.png")
-    if os.path.exists(logo_path):
-        img = Image(logo_path, width=1.2 * inch, height=1.2 * inch)
-        elements.append(img)
-        elements.append(Spacer(1, 10))
+    small_muted_style = ParagraphStyle(
+        name="SmallMuted",
+        parent=styles["Normal"],
+        fontSize=9,
+        textColor=colors.HexColor("#4B5563"),
+    )
 
-    # Title
-    elements.append(Paragraph("Job Completion Certificate", bold_center_style))
-    elements.append(Spacer(1, 10))
+    acceptance_style = ParagraphStyle(
+        name="Acceptance",
+        parent=styles["Italic"],
+        fontSize=9.5,
+        textColor=colors.HexColor("#374151"),
+        leading=13,
+    )
+
+    def draw_page_canvas(canvas_obj, _doc):
+        page_width, page_height = landscape(A4)
+
+        # Background watermark seal
+        canvas_obj.saveState()
+        canvas_obj.setFillColor(colors.HexColor("#EEF2F7"))
+        canvas_obj.setFont("Helvetica-Bold", 80)
+        canvas_obj.translate(page_width / 2, page_height / 2 + 20)
+        canvas_obj.rotate(25)
+        canvas_obj.drawCentredString(0, 0, "ANGANI LIMITED")
+        canvas_obj.restoreState()
+
+        # Header band
+        header_height = 60
+        canvas_obj.setFillColor(colors.HexColor("#0F3D66"))
+        canvas_obj.rect(0, page_height - header_height, page_width, header_height, fill=1, stroke=0)
+
+        # Logo + title
+        logo_path = os.path.join(settings.BASE_DIR, "static/images/logo.png")
+        if os.path.exists(logo_path):
+            canvas_obj.drawImage(
+                logo_path,
+                35,
+                page_height - header_height + 10,
+                width=40,
+                height=40,
+                preserveAspectRatio=True,
+                mask="auto",
+            )
+
+        canvas_obj.setFillColor(colors.white)
+        canvas_obj.setFont("Helvetica-Bold", 18)
+        canvas_obj.drawString(85, page_height - header_height + 25, "Job Completion Certificate")
+        canvas_obj.setFont("Helvetica", 10)
+        canvas_obj.drawString(85, page_height - header_height + 10, "Provisioned Service Completion Confirmation")
+
+    # Fields
+    certificate_id = f"JCC-{project.id:06d}"
 
     # Fields
     customer = project.customer_name.name if project.customer_name else "N/A"
@@ -430,82 +533,168 @@ def build_completion_certificate_pdf(project):
             Paragraph(date_provisioned, value_style),
         ],
         [Paragraph("Engineer's Name:", label_style), Paragraph(engineer, value_style)],
+        [Paragraph("Certificate ID:", label_style), Paragraph(certificate_id, value_style)],
     ]
 
-    table = Table(data, colWidths=[180, 350])
+    elements.append(Paragraph("Project Details", section_header_style))
+    table = Table(data, colWidths=[210, 530])
     table.setStyle(
         TableStyle(
             [
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F3F4F6")),
+                ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#1F2937")),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor("#D1D5DB")),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
             ]
         )
     )
 
     elements.append(table)
-    elements.append(Spacer(1, 15))
+    elements.append(Spacer(1, 10))
 
     # Certification text (Justified)
+    elements.append(Paragraph("Certification", section_header_style))
     cert_text = (
         "This is to certify that Angani Limited has provisioned and commissioned the service named above as per the "
         "agreed standards and requirements. We confirm that the service is up and running as per requirement."
     )
     elements.append(Paragraph(cert_text, justified_style))
-    elements.append(Spacer(1, 30))
+    elements.append(Spacer(1, 10))
 
     # Sign-off section
-    signoff_data = [
-        [
-            Paragraph("<b>CUSTOMER SIGN OFF</b>", styles["Normal"]),
-            Paragraph("<b>ANGANI SIGN OFF</b>", styles["Normal"]),
-        ],
-        [
-            Paragraph("<b>Name:</b> __________________________", styles["Normal"]),
-            Paragraph(f"<b>Name:</b> {engineer}", styles["Normal"]),
-        ],
-        [
-            Paragraph("<b>Designation:</b> ____________________", styles["Normal"]),
-            Paragraph("<b>Designation:</b> Support Engineer", styles["Normal"]),
-        ],
-        [
-            Paragraph("<b>Date:</b> ___________________________", styles["Normal"]),
-            Paragraph(f"<b>Date:</b> {date_provisioned}", styles["Normal"]),
-        ],
-        [
-            Paragraph("<b>Signature:</b> _______________________", styles["Normal"]),
-            Paragraph("<b>Signature:</b> A.S", styles["Normal"]),
-        ],
+    elements.append(Paragraph("Sign Off", section_header_style))
+
+    customer_signoff = [
+        [Paragraph("<b>CUSTOMER SIGN OFF</b>", small_muted_style)],
+        [Paragraph("Name", label_style)],
+        [""],
+        [Paragraph("Designation", label_style)],
+        [""],
+        [Paragraph("Date", label_style)],
+        [""],
+        [Paragraph("Signature", label_style)],
+        [Paragraph("____________________________", value_style)],
     ]
 
-    signoff_table = Table(signoff_data, colWidths=[270, 270])
-    signoff_table.setStyle(
+    angani_signoff = [
+        [Paragraph("<b>ANGANI SIGN OFF</b>", small_muted_style)],
+        [Paragraph("Name", label_style)],
+        [Paragraph(engineer, value_style)],
+        [Paragraph("Designation", label_style)],
+        [Paragraph("Support Engineer", value_style)],
+        [Paragraph("Date", label_style)],
+        [Paragraph(date_provisioned, value_style)],
+        [Paragraph("<b>Signature:</b> A.S", value_style)],
+        [Paragraph("____________________________", value_style)],
+    ]
+
+    customer_table = Table(customer_signoff, colWidths=[350])
+    angani_table = Table(angani_signoff, colWidths=[350])
+
+    for table in (customer_table, angani_table):
+        table.setStyle(
+            TableStyle(
+                [
+                    ("FONTSIZE", (0, 0), (-1, -1), 9.5),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("LINEBELOW", (0, 2), (0, 2), 0.75, colors.HexColor("#9CA3AF")),
+                    ("LINEBELOW", (0, 4), (0, 4), 0.75, colors.HexColor("#9CA3AF")),
+                    ("LINEBELOW", (0, 6), (0, 6), 0.75, colors.HexColor("#9CA3AF")),
+                    ("LINEBELOW", (0, 8), (0, 8), 0.75, colors.HexColor("#9CA3AF")),
+                ]
+            )
+        )
+
+    signoff_wrapper = Table(
+        [[customer_table, angani_table]],
+        colWidths=[360, 360],
+        hAlign="LEFT",
+    )
+    signoff_wrapper.setStyle(
         TableStyle(
             [
-                ("FONTSIZE", (0, 0), (-1, -1), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
             ]
         )
     )
-    elements.append(signoff_table)
+    elements.append(signoff_wrapper)
 
     # Build
-    doc.build(elements)
+    doc.build(elements, onFirstPage=draw_page_canvas, onLaterPages=draw_page_canvas)
     buffer.seek(0)
 
     safe_customer_name = customer.replace(" ", "_")
-    filename = f"Job Completion Certificate - {safe_customer_name}.pdf"
+    filename = f"Job Completion Certificate - {safe_customer_name} - {certificate_id}.pdf"
 
+    return buffer.getvalue(), filename
+
+
+def _load_watermark_font(font_size):
+    try:
+        return ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+    except Exception:
+        return ImageFont.load_default()
+
+
+def _apply_watermark(image, text):
+    base = image.convert("RGBA")
+    watermark = PilImage.new("RGBA", base.size, (255, 255, 255, 0))
+    draw = ImageDraw.Draw(watermark)
+
+    width, height = base.size
+    font_size = max(18, int(width * 0.04))
+    font = _load_watermark_font(font_size)
+
+    text_bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_height = text_bbox[3] - text_bbox[1]
+
+    padding = int(min(width, height) * 0.03)
+    x = width - text_width - padding
+    y = height - text_height - padding
+
+    draw.text(
+        (x, y),
+        text,
+        font=font,
+        fill=(120, 120, 120, 45),
+    )
+
+    combined = PilImage.alpha_composite(base, watermark)
+    return combined.convert("RGB")
+
+
+def build_completion_certificate_image(project):
+    pdf_bytes, _ = build_completion_certificate_pdf(project)
+    images = convert_from_bytes(pdf_bytes, dpi=200, fmt="png")
+    if not images:
+        raise ValueError("Failed to render certificate image.")
+
+    image = _apply_watermark(images[0], "Issued by Angani Limited")
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    customer = project.customer_name.name if project.customer_name else "N/A"
+    safe_customer_name = customer.replace(" ", "_")
+    certificate_id = f"JCC-{project.id:06d}"
+    filename = f"Job Completion Certificate - {safe_customer_name} - {certificate_id}.png"
     return buffer.getvalue(), filename
 
 
 @login_required
 def download_completion_certificate(request, pk):
     project = get_object_or_404(Project, pk=pk)
-    pdf_bytes, filename = build_completion_certificate_pdf(project)
+    image_bytes, filename = build_completion_certificate_image(project)
 
-    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response = HttpResponse(image_bytes, content_type="image/png")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Cache-Control"] = "no-store"
     return response
 
 
@@ -528,7 +717,7 @@ def share_completion_certificate(request, pk):
     if not client_email:
         return JsonResponse({"error": "Client primary email not available."}, status=400)
 
-    pdf_bytes, filename = build_completion_certificate_pdf(project)
+    image_bytes, filename = build_completion_certificate_image(project)
 
     subject = f"Job Completion Certificate - {project.customer_name.name}"
     recipient_name = project.customer_name.contact_person or project.customer_name.name
@@ -571,7 +760,7 @@ def share_completion_certificate(request, pk):
         cc=[email for email in settings.CERTIFICATE_CC_EMAILS if email],
     )
     msg.attach_alternative(body_html, "text/html")
-    msg.attach(filename, pdf_bytes, "application/pdf")
+    msg.attach(filename, image_bytes, "image/png")
     msg.send(fail_silently=False)
 
     project.job_completion_certificate = Project.CERT_SHARED

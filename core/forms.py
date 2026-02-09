@@ -35,7 +35,7 @@ class BaseClientForm(forms.ModelForm):
     # Point of Presence checkboxes
     pop_adc_nbo = forms.BooleanField(required=False, label="ADC NBO")
     pop_icolo_nbo = forms.BooleanField(required=False, label="Icolo NBO")
-    pop_icolo_mbo = forms.BooleanField(required=False, label="Icolo MBA")
+    pop_icolo_mba = forms.BooleanField(required=False, label="Icolo MBA")
     pop_ixafrica_nbo = forms.BooleanField(required=False, label="IXAfrica NBO")
     pop_raxio_ug = forms.BooleanField(required=False, label="Raxio UG")
     pop_tanzania = forms.BooleanField(required=False, label="Tanzania")
@@ -59,7 +59,7 @@ class BaseClientForm(forms.ModelForm):
             pops = self.instance.get_pops()
             self.fields['pop_adc_nbo'].initial = Client.POP_ADC_NBO in pops
             self.fields['pop_icolo_nbo'].initial = Client.POP_ICOLO_NBO in pops
-            self.fields['pop_icolo_mbo'].initial = Client.POP_ICOLO_MBO in pops
+            self.fields['pop_icolo_mba'].initial = Client.POP_ICOLO_MBA in pops
             self.fields['pop_ixafrica_nbo'].initial = Client.POP_IXAFRICA_NBO in pops
             self.fields['pop_raxio_ug'].initial = Client.POP_RAXIO_UG in pops
             self.fields['pop_tanzania'].initial = Client.POP_TANZANIA in pops
@@ -73,8 +73,8 @@ class BaseClientForm(forms.ModelForm):
             pops.append(Client.POP_ADC_NBO)
         if self.cleaned_data.get('pop_icolo_nbo'):
             pops.append(Client.POP_ICOLO_NBO)
-        if self.cleaned_data.get('pop_icolo_mbo'):
-            pops.append(Client.POP_ICOLO_MBO)
+        if self.cleaned_data.get('pop_icolo_mba'):
+            pops.append(Client.POP_ICOLO_MBA)
         if self.cleaned_data.get('pop_ixafrica_nbo'):
             pops.append(Client.POP_IXAFRICA_NBO)
         if self.cleaned_data.get('pop_raxio_ug'):

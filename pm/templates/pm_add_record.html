@@ -38,12 +38,14 @@ $(document).ready(function () {
     $('#id_customer_name').select2({
         placeholder: 'Select Client',
         allowClear: true,
+        minimumResultsForSearch: 0,
         width: '100%'
     });
 
     $('#id_engineer').select2({
         placeholder: 'Select Engineer',
         allowClear: true,
+        minimumResultsForSearch: 0,
         width: '100%'
     });
 });
