@@ -32,14 +32,42 @@
             </div>
         </form>
     </div>
-{% endblock %}
-{% block extra_js %}
+    <!-- Select2 for dropdowns (match PM behavior) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
 $(document).ready(function () {
     $('#id_client').select2({
         placeholder: 'Select Client',
         allowClear: true,
+        minimumResultsForSearch: 0,
+        width: '100%'
+    });
+
+    $('#id_site').select2({
+        placeholder: 'Select Site',
+        allowClear: true,
+        minimumResultsForSearch: 0,
+        width: '100%'
+    });
+
+    $('#id_os').select2({
+        placeholder: 'Select Operating System',
+        allowClear: true,
+        minimumResultsForSearch: 0,
+        width: '100%'
+    });
+
+    $('#id_managed_by').select2({
+        placeholder: 'Select Managed By',
+        allowClear: true,
+        minimumResultsForSearch: 0,
+        width: '100%'
+    });
+
+    $('#id_job_status').select2({
+        placeholder: 'Select Job Status',
+        allowClear: true,
+        minimumResultsForSearch: 0,
         width: '100%'
     });
 });

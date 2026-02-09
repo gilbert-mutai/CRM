@@ -57,8 +57,12 @@ def client_records(request):
     if selected_pop:
         clients = clients.filter(point_of_presence__contains=selected_pop)
 
-    # Pagination - default to 20, allow 50 and 100
-    page_size = int(request.GET.get("page_size", 20))
+    # Pagination - default to 20, allow 50, 100, or all
+    page_size_param = request.GET.get("page_size", "20").strip().lower()
+    if page_size_param == "all":
+        page_size = max(clients.count(), 1)
+    else:
+        page_size = int(page_size_param)
     paginator = Paginator(clients, page_size)
     page_num = request.GET.get("page", 1)
     clients_page = paginator.get_page(page_num)
@@ -70,7 +74,7 @@ def client_records(request):
         "selected_pop": selected_pop,
         "client_types": [Client.INDIVIDUAL, Client.COMPANY],
         "pop_choices": Client.POP_CHOICES,
-        "page_size": page_size,
+        "page_size": page_size_param,
     }
     return render(request, "client_records.html", context)
 

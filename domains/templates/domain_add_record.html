@@ -48,14 +48,28 @@
             </div>
         </form>
     </div>
-{% endblock %}
-{% block extra_js %}
+    <!-- Select2 for dropdowns (match PM behavior) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
 $(document).ready(function () {
     $('#id_client').select2({
         placeholder: 'Select Client',
         allowClear: true,
+        minimumResultsForSearch: 0,
+        width: '100%'
+    });
+
+    $('#id_host').select2({
+        placeholder: 'Select Host',
+        allowClear: true,
+        minimumResultsForSearch: 0,
+        width: '100%'
+    });
+
+    $('#id_status').select2({
+        placeholder: 'Select Status',
+        allowClear: true,
+        minimumResultsForSearch: 0,
         width: '100%'
     });
 });
