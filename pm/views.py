@@ -66,6 +66,39 @@ def notify_project(action, company_name, user):
     send_to_mattermost(message)
 
 
+def send_project_assignment_email(project, engineer, is_reassignment=False):
+    if not engineer or not getattr(engineer, "email", None):
+        return
+
+    action_word = "re-assigned" if is_reassignment else "assigned"
+    subject = f"Project {action_word.title()} - {project.project_title}"
+    engineer_name = engineer.get_full_name() or engineer.email
+    client_name = (
+        project.customer_name.name
+        if getattr(project, "customer_name", None)
+        else "Unknown Client"
+    )
+
+    body_text = (
+        f"Hello {engineer_name},\n\n"
+        f"A project titled \"{project.project_title}\" for {client_name} has been {action_word} to you.\n\n"
+        "Regards,\n\n"
+        "Support, Angani Ltd\n"
+        "Website: www.angani.co\n"
+        "Mob: +254207650028\n"
+        "West Point Building, 1st Floor,\n"
+        "Mpaka Road, Nairobi"
+    )
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=body_text,
+        from_email="support@angani.co",
+        to=[engineer.email],
+    )
+    msg.send(fail_silently=True)
+
+
 
 @login_required
 def pm_records(request):
@@ -190,6 +223,12 @@ def add_pm_record(request):
             new_project.save()
             messages.success(request, "Project added successfully.")
 
+            send_project_assignment_email(
+                new_project,
+                new_project.engineer,
+                is_reassignment=False,
+            )
+
             # Mattermost notification
             company_name = (
                 new_project.customer_name.name
@@ -211,11 +250,19 @@ def update_pm_record(request, pk):
     if request.method == "POST":
         form = UpdateProjectForm(request.POST, instance=project)
         if form.is_valid():
+            previous_engineer_id = project.engineer_id
             updated_project = form.save(commit=False)
             if has_form_changed(form):
                 updated_project.updated_by = request.user
                 updated_project.save()
                 messages.success(request, "Project updated successfully.")
+
+                if updated_project.engineer_id != previous_engineer_id:
+                    send_project_assignment_email(
+                        updated_project,
+                        updated_project.engineer,
+                        is_reassignment=True,
+                    )
 
                 # Mattermost notification
                 company_name = (
@@ -305,10 +352,18 @@ def update_project_engineer(request, pk):
     engineer_id = data.get("engineer_id")
 
     try:
+        previous_engineer_id = project.engineer_id
         engineer = User.objects.get(pk=engineer_id)
         project.engineer = engineer
         project.updated_by = request.user
         project.save()
+
+        if project.engineer_id != previous_engineer_id:
+            send_project_assignment_email(
+                project,
+                project.engineer,
+                is_reassignment=True,
+            )
         return JsonResponse({"success": True})
     except User.DoesNotExist:
         return JsonResponse(
