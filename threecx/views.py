@@ -4,6 +4,9 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.core.exceptions import PermissionDenied
+
+from core.models import Client
 from .forms import AddThreeCXForm
 import csv
 from django.http import HttpResponse
@@ -38,6 +41,11 @@ def notify_threecx(action, company_name, user):
 
 
 # --- Views ---
+def can_modify_threecx_record(user):
+    return user.is_superuser or user.is_staff
+
+
+@login_required
 def threecx_records(request):
     query = request.GET.get("search", "")
     sip_filter = request.GET.get("sip_provider", "")
@@ -86,21 +94,20 @@ def threecx_records(request):
     return render(request, "threecx_records.html", context)
 
 
+@login_required
 def threecx_record_details(request, pk):
-    if not request.user.is_authenticated:
-        messages.warning(request, "You must be logged in to view that page.")
-        return redirect("home")
-
     customer_record = get_record_by_id(pk)
-    return render(
-        request, "threecx_record_details.html", {"customer_record": customer_record}
-    )
+    context = {
+        "customer_record": customer_record,
+        "can_modify_record": can_modify_threecx_record(request.user),
+    }
+    return render(request, "threecx_record_details.html", context)
 
 
+@login_required
 def delete_threecx_record(request, pk):
-    if not request.user.is_authenticated:
-        messages.warning(request, "You must be logged in to do that.")
-        return redirect("login")
+    if not can_modify_threecx_record(request.user):
+        raise PermissionDenied
 
     record = get_record_by_id(pk)
     company_name = (
@@ -116,11 +123,8 @@ def delete_threecx_record(request, pk):
     return redirect("threecx_records")
 
 
+@login_required
 def add_threecx_record(request):
-    if not request.user.is_authenticated:
-        messages.warning(request, "You must be logged in.")
-        return redirect("login")
-
     if request.method == "POST":
         form = AddThreeCXForm(request.POST)
         if form.is_valid():
@@ -143,10 +147,10 @@ def add_threecx_record(request):
     return render(request, "threecx_add_record.html", {"form": form})
 
 
+@login_required
 def update_threecx_record(request, pk):
-    if not request.user.is_authenticated:
-        messages.warning(request, "You must be logged in.")
-        return redirect("login")
+    if not can_modify_threecx_record(request.user):
+        raise PermissionDenied
 
     current_record = get_record_by_id(pk)
     form = AddThreeCXForm(request.POST or None, instance=current_record)
@@ -180,10 +184,23 @@ def update_threecx_record(request, pk):
 @login_required
 def send_notification_threecx(request):
     if request.method == "GET":
-        emails_param = request.GET.get("emails", "")
-        emails = [e for e in emails_param.split(",") if e]
+        client_ids = request.GET.get("clients", "")
+        client_ids = [int(cid) for cid in client_ids.split(",") if cid.isdigit()]
+
+        if not client_ids:
+            messages.error(request, "No clients selected.")
+            return redirect("threecx_records")
+
+        clients = Client.objects.filter(id__in=client_ids)
+        emails = []
+        for c in clients:
+            if c.primary_email:
+                emails.append(c.primary_email)
+            if c.secondary_email:
+                emails.append(c.secondary_email)
+
         if not emails:
-            messages.error(request, "No email addresses provided.")
+            messages.error(request, "No email addresses found for selected clients.")
             return redirect("threecx_records")
         form = NotificationForm(initial={"bcc_emails": ",".join(emails)})
         return render(

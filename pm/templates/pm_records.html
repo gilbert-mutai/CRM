@@ -8,11 +8,13 @@
                title="Back">
                 <i class="bi bi-arrow-left" title="Back"></i> Back
             </a>
-            <a href="{% url 'add_pm_record' %}"
-               class="btn btn-outline-primary btn-sm"
-               title="Add Project">
-                <i class="bi bi-plus-lg" title="Add Project"></i> Add Project
-            </a>
+            {% if can_add_pm_record %}
+                <a href="{% url 'add_pm_record' %}"
+                   class="btn btn-outline-primary btn-sm"
+                   title="Add Project">
+                    <i class="bi bi-plus-lg" title="Add Project"></i> Add Project
+                </a>
+            {% endif %}
         </div>
     </div>
     <form method="get" class="mb-3" id="filter-form">

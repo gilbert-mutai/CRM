@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 
@@ -31,6 +32,10 @@ def notify_domain(action, company_name, user):
         message = f"CRM Updates (Domains & Hosting): Domain record for {company_name} was changed by {user_name}."
 
     send_to_mattermost(message)
+
+
+def can_modify_domain_record(user):
+    return user.is_superuser or user.is_staff
 
 
 @login_required
@@ -87,8 +92,12 @@ def domain_record_details(request, pk):
         return redirect("home")
 
     customer_record = get_record_by_id(pk)
+    context = {
+        "customer_record": customer_record,
+        "can_modify_record": can_modify_domain_record(request.user),
+    }
     return render(
-        request, "domain_record_details.html", {"customer_record": customer_record}
+        request, "domain_record_details.html", context
     )
 
 
@@ -96,6 +105,9 @@ def delete_domain_record(request, pk):
     if not request.user.is_authenticated:
         messages.warning(request, "You must be logged in to do that.")
         return redirect("login")
+
+    if not can_modify_domain_record(request.user):
+        raise PermissionDenied
 
     record = get_record_by_id(pk)
     company_name = (
@@ -142,6 +154,9 @@ def update_domain_record(request, pk):
     if not request.user.is_authenticated:
         messages.warning(request, "You must be logged in.")
         return redirect("login")
+
+    if not can_modify_domain_record(request.user):
+        raise PermissionDenied
 
     customer_record = get_record_by_id(pk)
     form = AddDomainForm(request.POST or None, instance=customer_record)

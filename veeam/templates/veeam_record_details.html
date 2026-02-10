@@ -47,7 +47,7 @@
                         <i class="bi bi-tag-fill me-2 text-secondary"></i>Tag
                     </th>
                     <td>
-                        {% if user.is_staff %}
+                        {% if can_inline_edit_record %}
                             <div id="tag-view">{{ customer_record.tag|default:"Click to set tag"|truncatechars:50 }}</div>
                             <input type="text"
                                    id="tag-input"
@@ -81,7 +81,7 @@
                         <i class="bi bi-check2-circle me-2 text-secondary"></i>Job Status
                     </th>
                     <td>
-                        {% if user.is_staff %}
+                        {% if can_inline_edit_record %}
                             <select id="job-status-select"
                                     class="form-select form-select-sm"
                                     data-job-id="{{ customer_record.id }}">
@@ -104,7 +104,7 @@
                         <i class="bi bi-chat-left-text me-2 text-secondary"></i>Comment
                     </th>
                     <td>
-                        {% if user.is_staff %}
+                        {% if can_inline_edit_record %}
                             <div id="comment-view">{{ customer_record.comment|default:"Click to add comment"|truncatechars:50 }}</div>
                             <textarea id="comment-input" class="form-control d-none" rows="3">{{ customer_record.comment }}</textarea>
                             <div class="mt-2 d-none" id="comment-actions">
@@ -169,28 +169,40 @@ document.addEventListener("DOMContentLoaded", () => {
       tagView.classList.remove("d-none");
     });
 
-    tagSave.addEventListener("click", () => {
-      const newTag = tagInput.value.trim();
-      fetch("{% url 'update_veeam_tag' 0 %}".replace("0", recordId), {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ tag: newTag })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const truncated = data.tag && data.tag.length > 50 ? data.tag.slice(0, 50) + "…" : data.tag;
-        tagView.textContent = truncated || "Click to set tag";
-        tagInput.classList.add("d-none");
-        tagActions.classList.add("d-none");
-        tagView.classList.remove("d-none");
-        tagSuccessMsg.classList.remove("d-none");
-        setTimeout(() => tagSuccessMsg.classList.add("d-none"), 2000);
-      })
-      .catch(err => console.error("Tag update failed:", err));
-    });
+        tagSave.addEventListener("click", () => {
+            const currentText = tagView.textContent.trim().replace("…", "");
+            const newTag = tagInput.value.trim();
+
+            if (currentText === newTag) {
+                tagSuccessMsg.textContent = "⚠ No changes detected";
+                tagSuccessMsg.classList.remove("d-none", "text-success");
+                tagSuccessMsg.classList.add("text-danger");
+                setTimeout(() => tagSuccessMsg.classList.add("d-none"), 2000);
+                return;
+            }
+
+            fetch("{% url 'update_veeam_tag' 0 %}".replace("0", recordId), {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ tag: newTag })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const truncated = data.tag && data.tag.length > 50 ? data.tag.slice(0, 50) + "…" : data.tag;
+                tagView.textContent = truncated || "Click to set tag";
+                tagInput.classList.add("d-none");
+                tagActions.classList.add("d-none");
+                tagView.classList.remove("d-none");
+                tagSuccessMsg.textContent = "✓ Tag updated";
+                tagSuccessMsg.classList.remove("d-none", "text-danger");
+                tagSuccessMsg.classList.add("text-success");
+                setTimeout(() => tagSuccessMsg.classList.add("d-none"), 2000);
+            })
+            .catch(err => console.error("Tag update failed:", err));
+        });
   }
 
   // === COMMENT ===
@@ -214,28 +226,40 @@ document.addEventListener("DOMContentLoaded", () => {
       commentView.classList.remove("d-none");
     });
 
-    commentSave.addEventListener("click", () => {
-      const newComment = commentInput.value.trim();
-      fetch("{% url 'update_veeam_comment' 0 %}".replace("0", recordId), {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ comment: newComment })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const truncated = data.comment && data.comment.length > 50 ? data.comment.slice(0, 50) + "…" : data.comment;
-        commentView.textContent = truncated || "Click to add comment";
-        commentInput.classList.add("d-none");
-        commentActions.classList.add("d-none");
-        commentView.classList.remove("d-none");
-        commentSuccessMsg.classList.remove("d-none");
-        setTimeout(() => commentSuccessMsg.classList.add("d-none"), 2000);
-      })
-      .catch(err => console.error("Comment update failed:", err));
-    });
+        commentSave.addEventListener("click", () => {
+            const currentText = commentView.textContent.trim().replace("…", "");
+            const newComment = commentInput.value.trim();
+
+            if (currentText === newComment) {
+                commentSuccessMsg.textContent = "⚠ No changes detected";
+                commentSuccessMsg.classList.remove("d-none", "text-success");
+                commentSuccessMsg.classList.add("text-danger");
+                setTimeout(() => commentSuccessMsg.classList.add("d-none"), 2000);
+                return;
+            }
+
+            fetch("{% url 'update_veeam_comment' 0 %}".replace("0", recordId), {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ comment: newComment })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const truncated = data.comment && data.comment.length > 50 ? data.comment.slice(0, 50) + "…" : data.comment;
+                commentView.textContent = truncated || "Click to add comment";
+                commentInput.classList.add("d-none");
+                commentActions.classList.add("d-none");
+                commentView.classList.remove("d-none");
+                commentSuccessMsg.textContent = "✓ Comment updated";
+                commentSuccessMsg.classList.remove("d-none", "text-danger");
+                commentSuccessMsg.classList.add("text-success");
+                setTimeout(() => commentSuccessMsg.classList.add("d-none"), 2000);
+            })
+            .catch(err => console.error("Comment update failed:", err));
+        });
   }
 
   // === JOB STATUS ===
@@ -268,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <a href="{% url 'veeam_records' %}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left-circle me-1"></i>Go Back
         </a>
-        {% if user.is_staff %}
+        {% if can_modify_record %}
             <a href="#"
                class="btn btn-outline-danger"
                data-bs-toggle="modal"
