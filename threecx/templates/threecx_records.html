@@ -294,23 +294,22 @@ document.addEventListener("DOMContentLoaded", function () {
             alert('Please select at least one record to send notification.');
             return;
         }
-        emailsToSend = Array.from(selectedCheckboxes)
-                            .flatMap(cb => {
-                                const emails = [cb.dataset.primaryEmail];
-                                if (cb.dataset.secondaryEmail && cb.dataset.secondaryEmail !== '') {
-                                    emails.push(cb.dataset.secondaryEmail);
-                                }
-                                return emails;
-                            })
-                            .filter(email => email);
-        selectedCountSpan.textContent = emailsToSend.length;
+        const selectedIds = Array.from(selectedCheckboxes)
+                            .map(cb => cb.dataset.recordId)
+                            .filter(id => id);
+        selectedCountSpan.textContent = selectedIds.length;
         confirmSendModal.show();
     });
 
     confirmSendBtn.addEventListener('click', () => {
-        if (emailsToSend.length > 0) {
+        const selectedCheckboxes = document.querySelectorAll('.record-checkbox:checked');
+        const selectedIds = Array.from(selectedCheckboxes)
+                            .map(cb => cb.dataset.recordId)
+                            .filter(id => id);
+
+        if (selectedIds.length > 0) {
             const params = new URLSearchParams();
-            params.append('emails', emailsToSend.join(','));
+            params.append('clients', selectedIds.join(','));
             window.location.href = '{% url "send_notification_threecx" %}?' + params.toString();
         }
     });

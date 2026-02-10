@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
@@ -82,7 +83,24 @@ def client_records(request):
 @login_required
 def client_record(request, pk):
     client_record = get_object_or_404(Client, pk=pk)
-    return render(request, "client_record_details.html", {"client_record": client_record})
+    context = {
+        "client_record": client_record,
+        "can_update_client": can_update_client(request.user),
+        "can_delete_client": can_delete_client(request.user),
+    }
+    return render(request, "client_record_details.html", context)
+
+
+def can_update_client(user):
+    return (
+        user.is_superuser
+        or user.is_staff
+        or user.groups.filter(name="Account Managers").exists()
+    )
+
+
+def can_delete_client(user):
+    return user.is_superuser or user.is_staff
 
 
 # ------------------------------
@@ -122,6 +140,8 @@ def add_client_record(request):
 
 @login_required
 def update_client_record(request, pk):
+    if not can_update_client(request.user):
+        raise PermissionDenied
     client_record = get_object_or_404(Client, pk=pk)
 
     if request.method == "POST":
@@ -152,6 +172,9 @@ def delete_client_record(request, pk):
         messages.warning(request, "You must be logged in to do that.")
         return redirect("login")
 
+    if not can_delete_client(request.user):
+        raise PermissionDenied
+
     if request.method == "POST":
         client = get_object_or_404(Client, pk=pk)
         client_name = client.name
@@ -168,10 +191,23 @@ def delete_client_record(request, pk):
 @login_required
 def send_notification_client(request):
     if request.method == "GET":
-        emails_param = request.GET.get("emails", "")
-        emails = [e for e in emails_param.split(",") if e]
+        client_ids = request.GET.get("clients", "")
+        client_ids = [int(cid) for cid in client_ids.split(",") if cid.isdigit()]
+
+        if not client_ids:
+            messages.error(request, "No clients selected.")
+            return redirect("client_records")
+
+        clients = Client.objects.filter(id__in=client_ids)
+        emails = []
+        for c in clients:
+            if c.primary_email:
+                emails.append(c.primary_email)
+            if c.secondary_email:
+                emails.append(c.secondary_email)
+
         if not emails:
-            messages.error(request, "No email addresses provided.")
+            messages.error(request, "No email addresses found for selected clients.")
             return redirect("client_records")
         form = NotificationForm(initial={"bcc_emails": ",".join(emails)})
         return render(

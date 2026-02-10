@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMultiAlternatives
 from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import (
     HttpResponse,
@@ -42,6 +43,14 @@ def notify_veeam(action, company_name, user):
         message = f"CRM updates: Veeam record for {company_name} was changed by {user_name}"
 
     send_to_mattermost(message)
+
+
+def can_modify_veeam_record(user):
+    return user.is_superuser or user.is_staff
+
+
+def can_inline_edit_veeam_record(user):
+    return user.is_staff or user.groups.filter(name="Engineers").exists()
 
 
 @login_required
@@ -104,13 +113,18 @@ def veeam_records(request):
 @login_required
 def veeam_record_details(request, pk):
     customer_record = get_record_by_id(pk)
-    return render(
-        request, "veeam_record_details.html", {"customer_record": customer_record}
-    )
+    context = {
+        "customer_record": customer_record,
+        "can_modify_record": can_modify_veeam_record(request.user),
+        "can_inline_edit_record": can_inline_edit_veeam_record(request.user),
+    }
+    return render(request, "veeam_record_details.html", context)
 
 
 @login_required
 def delete_veeam_record(request, pk):
+    if not can_modify_veeam_record(request.user):
+        raise PermissionDenied
     record = get_record_by_id(pk)
     company_name = (
         record.client.name if record and getattr(record, "client", None) else "Unknown Company"
@@ -151,6 +165,8 @@ def add_veeam_record(request):
 
 @login_required
 def update_veeam_record(request, pk):
+    if not can_modify_veeam_record(request.user):
+        raise PermissionDenied
     record = get_record_by_id(pk)
     form = UpdateVeeamForm(request.POST or None, instance=record)
 
@@ -330,7 +346,7 @@ def update_veeam_comment(request, pk):
 # === Helper ===
 def _update_single_field(request, pk, field, allowed_values=None):
     record = get_object_or_404(VeeamJob, pk=pk)
-    if not request.user.is_staff:
+    if not can_inline_edit_veeam_record(request.user):
         return HttpResponseForbidden("Not allowed.")
 
     try:

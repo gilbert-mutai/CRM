@@ -382,7 +382,7 @@ descriptionSave.addEventListener("click", () => {
   if (currentText === newText) {
     descriptionSuccessMsg.textContent = "⚠ No changes detected";
     descriptionSuccessMsg.classList.remove("d-none", "text-success");
-    descriptionSuccessMsg.classList.add("text-warning");
+    descriptionSuccessMsg.classList.add("text-danger");
     setTimeout(() => descriptionSuccessMsg.classList.add("d-none"), 2000);
     return;
   }
@@ -403,7 +403,7 @@ descriptionSave.addEventListener("click", () => {
     descriptionActions.classList.add("d-none");
     descriptionView.classList.remove("d-none");
     descriptionSuccessMsg.textContent = "✓ Description updated";
-    descriptionSuccessMsg.classList.remove("d-none", "text-warning");
+    descriptionSuccessMsg.classList.remove("d-none", "text-danger");
     descriptionSuccessMsg.classList.add("text-success");
     setTimeout(() => descriptionSuccessMsg.classList.add("d-none"), 2000);
   });
@@ -439,7 +439,7 @@ commentSave.addEventListener("click", () => {
   if (currentText === newText) {
     commentSuccessMsg.textContent = "⚠ No changes detected";
     commentSuccessMsg.classList.remove("d-none", "text-success");
-    commentSuccessMsg.classList.add("text-warning");
+    commentSuccessMsg.classList.add("text-danger");
     setTimeout(() => commentSuccessMsg.classList.add("d-none"), 2000);
     return;
   }
@@ -460,7 +460,7 @@ commentSave.addEventListener("click", () => {
     commentActions.classList.add("d-none");
     commentView.classList.remove("d-none");
     commentSuccessMsg.textContent = "✓ Comment updated";
-    commentSuccessMsg.classList.remove("d-none", "text-warning");
+    commentSuccessMsg.classList.remove("d-none", "text-danger");
     commentSuccessMsg.classList.add("text-success");
     setTimeout(() => commentSuccessMsg.classList.add("d-none"), 2000);
   });

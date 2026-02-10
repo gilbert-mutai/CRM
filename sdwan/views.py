@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMultiAlternatives
 from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import (
     HttpResponse,
@@ -46,6 +47,10 @@ def notify_sdwan(action, company_name, user):
         message = f"CRM Updates (SD-WAN): SD-WAN record for {company_name} was changed by {user_name}."
 
     send_to_mattermost(message)
+
+
+def can_modify_sdwan_record(user):
+    return user.is_superuser or user.is_staff
 
 
 @login_required
@@ -96,7 +101,11 @@ def sdwan_records(request):
 @login_required
 def sdwan_record_details(request, pk):
     customer_record = get_object_or_404(SDWAN, pk=pk)
-    return render(request, "sdwan_record_details.html", {"customer_record": customer_record})
+    context = {
+        "customer_record": customer_record,
+        "can_modify_record": can_modify_sdwan_record(request.user),
+    }
+    return render(request, "sdwan_record_details.html", context)
 
 
 @login_required
@@ -125,6 +134,8 @@ def add_sdwan_record(request):
 
 @login_required
 def update_sdwan_record(request, pk):
+    if not can_modify_sdwan_record(request.user):
+        raise PermissionDenied
     current_record = get_object_or_404(SDWAN, pk=pk)
     form = UpdateSDWANForm(request.POST or None, instance=current_record)
 
@@ -157,6 +168,8 @@ def update_sdwan_record(request, pk):
 
 @login_required
 def delete_sdwan_record(request, pk):
+    if not can_modify_sdwan_record(request.user):
+        raise PermissionDenied
     record = get_object_or_404(SDWAN, pk=pk)
     company_name = (
         record.client.name if record and getattr(record, "client", None) else "Unknown Company"

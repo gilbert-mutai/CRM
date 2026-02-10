@@ -89,9 +89,10 @@
                     {% for client in clients %}
                         <tr data-href="{% url 'client_record' client.id %}" tabindex="0">
                             <td>
-                                <input type="checkbox" class="record-checkbox" 
-                                       data-primary-email="{{ client.primary_email }}" 
-                                       data-secondary-email="{{ client.secondary_email }}" />
+                                    <input type="checkbox" class="record-checkbox" 
+                                      data-client-id="{{ client.id }}"
+                                      data-primary-email="{{ client.primary_email }}" 
+                                      data-secondary-email="{{ client.secondary_email }}" />
                             </td>
                             <td>{{ client.name }}</td>
                             <td>{{ client.client_type }}</td>
@@ -253,9 +254,15 @@
     event.preventDefault();
     const selectedEmails = Array.from(document.querySelectorAll('.record-checkbox:checked'))
                                 .flatMap(cb => {
-                                  const emails = [cb.dataset.primaryEmail];
-                                  if (cb.dataset.secondaryEmail && cb.dataset.secondaryEmail !== '') {
-                                    emails.push(cb.dataset.secondaryEmail);
+                                  const emails = [];
+                                  const primaryEmail = cb.dataset.primaryEmail;
+                                  const secondaryEmail = cb.dataset.secondaryEmail;
+
+                                  if (primaryEmail && primaryEmail !== 'None') {
+                                    emails.push(primaryEmail);
+                                  }
+                                  if (secondaryEmail && secondaryEmail !== 'None') {
+                                    emails.push(secondaryEmail);
                                   }
                                   return emails;
                                 })
@@ -270,25 +277,20 @@
     document.getElementById('export-form').submit();
   });
 
-  let selectedNotificationEmails = [];
+  let selectedNotificationClientIds = [];
 
   document.getElementById('send-notification').addEventListener('click', function(e) {
     e.preventDefault();
-    selectedNotificationEmails = Array.from(document.querySelectorAll('.record-checkbox:checked'))
-                                      .flatMap(cb => {
-                                        const emails = [cb.dataset.primaryEmail];
-                                        if (cb.dataset.secondaryEmail && cb.dataset.secondaryEmail !== '') {
-                                          emails.push(cb.dataset.secondaryEmail);
-                                        }
-                                        return emails;
-                                      });
+    selectedNotificationClientIds = Array.from(document.querySelectorAll('.record-checkbox:checked'))
+                                      .map(cb => cb.dataset.clientId)
+                                      .filter(id => id);
 
-    if (selectedNotificationEmails.length === 0) {
+    if (selectedNotificationClientIds.length === 0) {
       alert("Please select at least one client to send notification.");
       return;
     }
 
-    document.getElementById('selected-count').textContent = `${selectedNotificationEmails.length} selected client(s)?`;
+    document.getElementById('selected-count').textContent = `${selectedNotificationClientIds.length} selected client(s)?`;
 
     const modal = new bootstrap.Modal(document.getElementById('notificationModal'));
     modal.show();
@@ -296,7 +298,7 @@
 
   document.getElementById('confirmSendNotification').addEventListener('click', function() {
     const queryString = new URLSearchParams({
-      emails: selectedNotificationEmails.join(',')
+      clients: selectedNotificationClientIds.join(',')
     }).toString();
     window.location.href = "{% url 'send_notification_client' %}?" + queryString;
   });
