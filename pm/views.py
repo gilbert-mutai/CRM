@@ -580,31 +580,31 @@ def build_completion_certificate_pdf(project):
     elements.append(Paragraph("Sign Off", section_header_style))
 
     customer_signoff = [
-        [Paragraph("<b>CUSTOMER SIGN OFF</b>", small_muted_style)],
-        [Paragraph("Name", label_style)],
-        [""],
-        [Paragraph("Designation", label_style)],
-        [""],
-        [Paragraph("Date", label_style)],
-        [""],
-        [Paragraph("Signature", label_style)],
-        [Paragraph("____________________________", value_style)],
+        [Paragraph("<b>CUSTOMER SIGN OFF</b>", small_muted_style), ""],
+        [Paragraph("Name", label_style), ""],
+        ["", ""],
+        [Paragraph("Designation", label_style), ""],
+        ["", ""],
+        [Paragraph("Date", label_style), ""],
+        ["", ""],
+        [Paragraph("Signature", label_style), ""],
+        ["", ""],
     ]
 
     angani_signoff = [
-        [Paragraph("<b>ANGANI SIGN OFF</b>", small_muted_style)],
-        [Paragraph("Name", label_style)],
-        [Paragraph(engineer, value_style)],
-        [Paragraph("Designation", label_style)],
-        [Paragraph("Support Engineer", value_style)],
-        [Paragraph("Date", label_style)],
-        [Paragraph(date_provisioned, value_style)],
-        [Paragraph("<b>Signature:</b> A.S", value_style)],
-        [Paragraph("____________________________", value_style)],
+        [Paragraph("<b>ANGANI SIGN OFF</b>", small_muted_style), ""],
+        [Paragraph("Name", label_style), ""],
+        [Paragraph(engineer, value_style), ""],
+        [Paragraph("Designation", label_style), ""],
+        [Paragraph("Support Engineer", value_style), ""],
+        [Paragraph("Date", label_style), ""],
+        [Paragraph(date_provisioned, value_style), ""],
+        [Paragraph("Signature", label_style), ""],
+        [Paragraph("A.S", value_style), ""],
     ]
 
-    customer_table = Table(customer_signoff, colWidths=[350])
-    angani_table = Table(angani_signoff, colWidths=[350])
+    customer_table = Table(customer_signoff, colWidths=[220, 15])
+    angani_table = Table(angani_signoff, colWidths=[220, 15])
 
     for table in (customer_table, angani_table):
         table.setStyle(
@@ -622,8 +622,8 @@ def build_completion_certificate_pdf(project):
         )
 
     signoff_wrapper = Table(
-        [[customer_table, angani_table]],
-        colWidths=[255, 255],
+        [[customer_table, "", angani_table]],
+        colWidths=[235, 40, 235],
         hAlign="LEFT",
     )
     signoff_wrapper.setStyle(
