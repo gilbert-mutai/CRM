@@ -94,7 +94,8 @@ def send_project_assignment_email(project, engineer, is_reassignment=False):
         "Regards,\n\n"
         "Support, Angani Ltd\n"
         "Website: www.angani.co\n"
-        "Mob: +254207650028\n"
+        "Tel: +254207650028 | +254207608000\n"
+        "Whatsapp: +254 724360641\n"
         "West Point Building, 1st Floor,\n"
         "Mpaka Road, Nairobi"
     )
@@ -421,7 +422,7 @@ def build_completion_certificate_pdf(project):
 
     doc = SimpleDocTemplate(
         buffer,
-        pagesize=landscape(A4),
+        pagesize=A4,
         topMargin=85,
         bottomMargin=28,
         leftMargin=35,
@@ -486,7 +487,7 @@ def build_completion_certificate_pdf(project):
     )
 
     def draw_page_canvas(canvas_obj, _doc):
-        page_width, page_height = landscape(A4)
+        page_width, page_height = A4
 
         # Background watermark seal
         canvas_obj.saveState()
@@ -549,7 +550,7 @@ def build_completion_certificate_pdf(project):
     ]
 
     elements.append(Paragraph("Project Details", section_header_style))
-    table = Table(data, colWidths=[210, 530])
+    table = Table(data, colWidths=[190, 335])
     table.setStyle(
         TableStyle(
             [
@@ -622,7 +623,7 @@ def build_completion_certificate_pdf(project):
 
     signoff_wrapper = Table(
         [[customer_table, angani_table]],
-        colWidths=[360, 360],
+        colWidths=[255, 255],
         hAlign="LEFT",
     )
     signoff_wrapper.setStyle(
@@ -687,9 +688,24 @@ def build_completion_certificate_image(project):
     if not images:
         raise ValueError("Failed to render certificate image.")
 
-    image = _apply_watermark(images[0], "Issued by Angani Limited")
+    watermarked_pages = [
+        _apply_watermark(page, "Issued by Angani Limited") for page in images
+    ]
+
+    if len(watermarked_pages) == 1:
+        combined = watermarked_pages[0]
+    else:
+        max_width = max(page.width for page in watermarked_pages)
+        total_height = sum(page.height for page in watermarked_pages)
+        combined = PilImage.new("RGB", (max_width, total_height), (255, 255, 255))
+
+        y_offset = 0
+        for page in watermarked_pages:
+            combined.paste(page, (0, y_offset))
+            y_offset += page.height
+
     buffer = BytesIO()
-    image.save(buffer, format="PNG")
+    combined.save(buffer, format="PNG")
     buffer.seek(0)
 
     customer = project.customer_name.name if project.customer_name else "N/A"
@@ -744,7 +760,8 @@ def share_completion_certificate(request, pk):
         "Regards,\n\n"
         "Support, Angani Ltd\n"
         "Website: www.angani.co\n"
-        "Mob: +254207650028\n"
+        "Tel: +254207650028 | +254207608000\n"
+        "Whatsapp: +254 724360641\n"
         "West Point Building, 1st Floor,\n"
         "Mpaka Road, Nairobi"
     )
@@ -759,7 +776,8 @@ def share_completion_certificate(request, pk):
         "Regards,<br><br>"
         "Support, Angani Ltd<br>"
         "Website: www.angani.co<br>"
-        "Mob: +254207650028<br>"
+        "Tel: +254207650028 | +254207608000<br>"
+        "Whatsapp: +254 724360641<br>"
         "West Point Building, 1st Floor,<br>"
         "Mpaka Road, Nairobi"
     )
