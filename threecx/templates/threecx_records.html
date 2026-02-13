@@ -100,6 +100,7 @@
                             <input type="checkbox"
                                    class="record-checkbox"
                                    data-record-id="{{ record.id }}"
+                                data-client-id="{{ record.client.id }}"
                                    data-primary-email="{{ record.client.primary_email }}"
                                    data-secondary-email="{{ record.client.secondary_email }}"
                                    aria-label="Select {{ record.client.name }}" />
@@ -294,22 +295,22 @@ document.addEventListener("DOMContentLoaded", function () {
             alert('Please select at least one record to send notification.');
             return;
         }
-        const selectedIds = Array.from(selectedCheckboxes)
-                            .map(cb => cb.dataset.recordId)
+        const selectedClientIds = Array.from(selectedCheckboxes)
+                            .map(cb => cb.dataset.clientId)
                             .filter(id => id);
-        selectedCountSpan.textContent = selectedIds.length;
+        selectedCountSpan.textContent = selectedClientIds.length;
         confirmSendModal.show();
     });
 
     confirmSendBtn.addEventListener('click', () => {
         const selectedCheckboxes = document.querySelectorAll('.record-checkbox:checked');
-        const selectedIds = Array.from(selectedCheckboxes)
-                            .map(cb => cb.dataset.recordId)
+        const selectedClientIds = Array.from(selectedCheckboxes)
+                            .map(cb => cb.dataset.clientId)
                             .filter(id => id);
 
-        if (selectedIds.length > 0) {
+        if (selectedClientIds.length > 0) {
             const params = new URLSearchParams();
-            params.append('clients', selectedIds.join(','));
+            params.append('clients', selectedClientIds.join(','));
             window.location.href = '{% url "send_notification_threecx" %}?' + params.toString();
         }
     });
