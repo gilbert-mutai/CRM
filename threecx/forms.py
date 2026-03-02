@@ -3,7 +3,7 @@ from .models import ThreeCX
 from core.models import Client
 
 # Allowed simultaneous call values
-SC_VALUES = [4, 8, 16, 24, 32, 48, 64, 96, 128, 256]
+SC_VALUES = [1, 2, 4, 8, 16, 24, 32, 48, 64, 96, 128, 256]
 
 
 class ClientNameOnlyChoiceField(forms.ModelChoiceField):
@@ -37,7 +37,7 @@ class BaseThreeCXForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "sc-counter",
-                "min": min(SC_VALUES),
+                "min": 1,
                 "max": max(SC_VALUES),
             }
         ),
