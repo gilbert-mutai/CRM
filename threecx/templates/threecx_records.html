@@ -82,7 +82,6 @@
                     <th scope="col">Company/Username</th>
                     <th scope="col">Contact Person</th>
                     <th scope="col">Primary Email</th>
-                    <th scope="col">Secondary Email</th>
                     <th scope="col">SIP Provider</th>
                     <th scope="col">FQDN</th>
                     <th scope="col">License Type</th>
@@ -97,18 +96,16 @@
                         role="row"
                         aria-label="Record {{ record.client.name }}">
                         <td>
-                            <input type="checkbox"
+                               <input type="checkbox"
                                    class="record-checkbox"
                                    data-record-id="{{ record.id }}"
-                                data-client-id="{{ record.client.id }}"
+                                   data-client-id="{{ record.client.id }}"
                                    data-primary-email="{{ record.client.primary_email }}"
-                                   data-secondary-email="{{ record.client.secondary_email }}"
                                    aria-label="Select {{ record.client.name }}" />
                         </td>
                         <td>{{ record.client.name }}</td>
                         <td>{{ record.client.contact_person }}</td>
                         <td>{{ record.client.primary_email }}</td>
-                        <td>{{ record.client.secondary_email|default:"-" }}</td>
                         <td>{{ record.get_sip_provider_display }}</td>
                         <td>{{ record.fqdn }}</td>
                         <td>{{ record.get_license_type_display }}</td>

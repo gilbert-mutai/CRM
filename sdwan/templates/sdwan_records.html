@@ -67,7 +67,6 @@
                     <th>Account Number</th>
                     <th>Contact Person</th>
                     <th>Primary Email</th>
-                    <th>Secondary Email</th>
                     <th>Phone</th>
                     <th>Provider</th>
                     <th>Details</th>
@@ -94,7 +93,6 @@
                             <td>{{ record.account_number }}</td>
                             <td>{{ record.client.contact_person }}</td>
                             <td>{{ record.client.primary_email }}</td>
-                            <td>{{ record.client.secondary_email|default:"-" }}</td>
                             <td>{{ record.client.phone_number }}</td>
                             <td>{{ record.provider }}</td>
                             <td>
