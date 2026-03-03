@@ -31,10 +31,6 @@ ENV/
 .venv/
 .idea/
 
-# Migrations (optional: only ignore if you recreate them often)
-**/migrations/*.py
-!**/migrations/__init__.py
-
 # Pip dependency files
 pip-log.txt
 pip-delete-this-directory.txt
