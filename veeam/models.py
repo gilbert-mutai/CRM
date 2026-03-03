@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.db.models.functions import Lower, Trim
 from core.models import Client
 
 
@@ -72,6 +74,34 @@ class VeeamJob(models.Model):
         verbose_name="Updated By",
     )
 
+    def clean(self):
+        super().clean()
+
+        if self.computer_name:
+            self.computer_name = self.computer_name.strip()
+
+        if self.client_id and self.computer_name:
+            duplicate_qs = (
+                VeeamJob.objects.annotate(
+                    normalized_computer_name=Lower(Trim("computer_name"))
+                )
+                .filter(
+                    client=self.client,
+                    normalized_computer_name=self.computer_name.lower(),
+                )
+            )
+            if self.pk:
+                duplicate_qs = duplicate_qs.exclude(pk=self.pk)
+
+            if duplicate_qs.exists():
+                raise ValidationError(
+                    {
+                        "computer_name": (
+                            "This computer name already exists for the selected client."
+                        )
+                    }
+                )
+
     def __str__(self):
         return f"{self.client.name} - {self.computer_name}"
 
@@ -85,7 +115,9 @@ class VeeamJob(models.Model):
         ]
         constraints = [
             models.UniqueConstraint(
-                name="unique_client_computer_ci", fields=["client", "computer_name"]
+                "client",
+                Lower(Trim("computer_name")),
+                name="unique_client_computer_ci",
             )
         ]
         ordering = ["-last_updated"]
