@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db.models.functions import Lower, Trim
 from core.models import Client
 
 
@@ -50,6 +52,32 @@ class SDWAN(models.Model):
         verbose_name="Updated By",
     )
 
+    def clean(self):
+        super().clean()
+
+        if self.account_number:
+            self.account_number = self.account_number.strip()
+
+        if self.client_id and self.account_number:
+            duplicate_qs = (
+                SDWAN.objects.annotate(normalized_account=Lower(Trim("account_number")))
+                .filter(
+                    client=self.client,
+                    normalized_account=self.account_number.lower(),
+                )
+            )
+            if self.pk:
+                duplicate_qs = duplicate_qs.exclude(pk=self.pk)
+
+            if duplicate_qs.exists():
+                raise ValidationError(
+                    {
+                        "account_number": (
+                            "This account number already exists for the selected client."
+                        )
+                    }
+                )
+
     def __str__(self):
         return f"{self.client.name} - {self.provider} ({self.account_number})"
 
@@ -60,8 +88,9 @@ class SDWAN(models.Model):
         ]
         constraints = [
             models.UniqueConstraint(
-                name="unique_client_account_number",
-                fields=["client", "account_number"],
+                "client",
+                Lower(Trim("account_number")),
+                name="unique_client_account_number_ci",
             )
         ]
         ordering = ["-last_updated"]

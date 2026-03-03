@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from core.models import Client
 
@@ -56,6 +57,18 @@ class ThreeCX(models.Model):
         related_name="threecx_updated_records",
     )
 
+    def clean(self):
+        super().clean()
+
+        duplicate_qs = ThreeCX.objects.filter(client=self.client)
+        if self.pk:
+            duplicate_qs = duplicate_qs.exclude(pk=self.pk)
+
+        if duplicate_qs.exists():
+            raise ValidationError(
+                {"client": "A 3CX record already exists for this client."}
+            )
+
     def __str__(self):
         return f"{self.client.name} - {self.fqdn}"
 
@@ -64,4 +77,7 @@ class ThreeCX(models.Model):
             models.Index(fields=["fqdn"]),
             models.Index(fields=["sip_provider"]),
             models.Index(fields=["license_type"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=["client"], name="unique_threecx_client")
         ]

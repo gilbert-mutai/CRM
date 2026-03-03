@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
 from django.core.validators import RegexValidator
+from django.db.models.functions import Lower, Trim
 
 
 class Client(models.Model):
@@ -82,10 +83,27 @@ class Client(models.Model):
 
     def clean(self):
         super().clean()
+
+        if self.name:
+            self.name = self.name.strip()
+
         if self.client_type == self.COMPANY and not self.contact_person:
             raise ValidationError(
                 {"contact_person": "Contact person is required for company clients."}
             )
+
+        if self.name:
+            duplicate_qs = (
+                Client.objects.annotate(normalized_name=Lower(Trim("name")))
+                .filter(normalized_name=self.name.lower())
+            )
+            if self.pk:
+                duplicate_qs = duplicate_qs.exclude(pk=self.pk)
+
+            if duplicate_qs.exists():
+                raise ValidationError(
+                    {"name": "A client with this name already exists."}
+                )
 
     def __str__(self):
         return f"{self.name} ({self.primary_email})"
@@ -121,6 +139,7 @@ class Client(models.Model):
         ]
         constraints = [
             models.UniqueConstraint(
-                fields=["name", "primary_email"], name="unique_client_name_email"
+                Lower(Trim("name")),
+                name="unique_client_name_ci",
             )
         ]
