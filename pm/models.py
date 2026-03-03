@@ -1,8 +1,6 @@
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
-from django.core.exceptions import ValidationError
-from django.db.models.functions import Lower, Trim
 from core.models import Client
 
 
@@ -70,28 +68,6 @@ class Project(models.Model):
         if self.project_title:
             self.project_title = self.project_title.strip()
 
-        if self.customer_name_id and self.project_title:
-            duplicate_qs = (
-                Project.objects.annotate(
-                    normalized_project_title=Lower(Trim("project_title"))
-                )
-                .filter(
-                    customer_name=self.customer_name,
-                    normalized_project_title=self.project_title.lower(),
-                )
-            )
-            if self.pk:
-                duplicate_qs = duplicate_qs.exclude(pk=self.pk)
-
-            if duplicate_qs.exists():
-                raise ValidationError(
-                    {
-                        "project_title": (
-                            "A project with this title already exists for the selected client."
-                        )
-                    }
-                )
-
     @property
     def is_completed(self):
         return self.status == self.STATUS_COMPLETED
@@ -103,11 +79,4 @@ class Project(models.Model):
         indexes = [
             models.Index(fields=["status"]),
             models.Index(fields=["customer_name"]),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                "customer_name",
-                Lower(Trim("project_title")),
-                name="unique_client_project_title_ci",
-            )
         ]
