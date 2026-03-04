@@ -142,8 +142,8 @@ AUTHENTICATION_BACKENDS = [
 # Expire activation / password reset tokens after 3 days
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 7  # 7 days in seconds  
 
-# Session expiry: 30 minutes of inactivity
-SESSION_COOKIE_AGE = 30 * 60
+# Session expiry: 1 day of inactivity
+SESSION_COOKIE_AGE = 24 * 60 * 60
 SESSION_SAVE_EVERY_REQUEST = True
 
 
