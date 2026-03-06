@@ -333,27 +333,70 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // === ENGINEER SELECT ===
   const engineerSelect = document.getElementById("engineer-select");
+  const engineerModalEl = document.getElementById("confirmEngineerModal");
+  const confirmEngineerBtn = document.getElementById("confirm-engineer-btn");
+  const engineerModal = engineerModalEl ? new bootstrap.Modal(engineerModalEl) : null;
+  let lastEngineer = engineerSelect ? engineerSelect.value : null;
+  let pendingEngineer = null;
+
+  function submitEngineer(newEngineerId) {
+    fetch("{% url 'update_project_engineer' project.id %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrfToken,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ engineer_id: newEngineerId })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        lastEngineer = newEngineerId;
+        const msg = document.getElementById("engineer-success-msg");
+        msg.classList.remove("d-none");
+        setTimeout(() => msg.classList.add("d-none"), 2000);
+      } else {
+        engineerSelect.value = lastEngineer;
+        alert("Failed to update engineer.");
+      }
+    })
+    .catch(() => {
+      engineerSelect.value = lastEngineer;
+      alert("Failed to update engineer. Please try again.");
+    })
+    .finally(() => {
+      pendingEngineer = null;
+    });
+  }
+
   if (engineerSelect) {
     if (isProjectCompleted()) {
       engineerSelect.disabled = true;
     }
     engineerSelect.addEventListener("change", function () {
-      fetch("{% url 'update_project_engineer' project.id %}", {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ engineer_id: this.value })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          const msg = document.getElementById("engineer-success-msg");
-          msg.classList.remove("d-none");
-          setTimeout(() => msg.classList.add("d-none"), 2000);
-        }
-      });
+      pendingEngineer = this.value;
+
+      if (engineerModal) {
+        engineerModal.show();
+      } else {
+        submitEngineer(pendingEngineer);
+      }
+    });
+  }
+
+  if (confirmEngineerBtn && engineerModal) {
+    confirmEngineerBtn.addEventListener("click", () => {
+      if (pendingEngineer) {
+        submitEngineer(pendingEngineer);
+      }
+      engineerModal.hide();
+    });
+
+    engineerModalEl.addEventListener("hidden.bs.modal", () => {
+      if (pendingEngineer && engineerSelect) {
+        engineerSelect.value = lastEngineer;
+      }
+      pendingEngineer = null;
     });
   }
 
@@ -485,6 +528,31 @@ commentSave.addEventListener("click", () => {
   }
 });
     </script>
+    <!-- === Engineer Change Confirmation Modal === -->
+    <div class="modal fade"
+       id="confirmEngineerModal"
+       tabindex="-1"
+       aria-labelledby="confirmEngineerLabel"
+       aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title" id="confirmEngineerLabel">Confirm Engineer Change</h5>
+            <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to assign this project to the selected engineer?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirm-engineer-btn">Yes, update</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- === Action Buttons (Go Back, Delete, Update) === -->
     <div class="d-flex justify-content-center gap-2 mt-4 mb-3">
         <!-- Go Back -->
