@@ -265,28 +265,91 @@ document.addEventListener("DOMContentLoaded", () => {
   // === JOB STATUS ===
   const jobStatusSelect = document.getElementById("job-status-select");
   const statusSuccessMsg = document.getElementById("status-success-msg");
+    const statusModalEl = document.getElementById("confirmStatusModal");
+    const confirmStatusBtn = document.getElementById("confirm-status-btn");
+    const statusModal = statusModalEl ? new bootstrap.Modal(statusModalEl) : null;
+    let lastStatus = jobStatusSelect ? jobStatusSelect.value : null;
+    let pendingStatus = null;
+
+    function submitJobStatus(newStatus) {
+        fetch("{% url 'update_veeam_status' 0 %}".replace("0", recordId), {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ job_status: newStatus })
+        })
+        .then(res => res.json())
+        .then(() => {
+            lastStatus = newStatus;
+            statusSuccessMsg.classList.remove("d-none");
+            setTimeout(() => statusSuccessMsg.classList.add("d-none"), 2000);
+        })
+        .catch(err => {
+            console.error("Status update failed:", err);
+            jobStatusSelect.value = lastStatus;
+            alert("Failed to update status. Please try again.");
+        })
+        .finally(() => {
+            pendingStatus = null;
+        });
+    }
 
   if (jobStatusSelect) {
     jobStatusSelect.addEventListener("change", function () {
-      const newStatus = this.value;
-      fetch("{% url 'update_veeam_status' 0 %}".replace("0", recordId), {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ job_status: newStatus })
-      })
-      .then(res => res.json())
-      .then(data => {
-        statusSuccessMsg.classList.remove("d-none");
-        setTimeout(() => statusSuccessMsg.classList.add("d-none"), 2000);
-      })
-      .catch(err => console.error("Status update failed:", err));
+            pendingStatus = this.value;
+
+            if (statusModal) {
+                statusModal.show();
+            } else {
+                submitJobStatus(pendingStatus);
+            }
     });
   }
+
+    if (confirmStatusBtn && statusModal) {
+        confirmStatusBtn.addEventListener("click", () => {
+            if (pendingStatus) {
+                submitJobStatus(pendingStatus);
+            }
+            statusModal.hide();
+        });
+
+        statusModalEl.addEventListener("hidden.bs.modal", () => {
+            if (pendingStatus && jobStatusSelect) {
+                jobStatusSelect.value = lastStatus;
+            }
+            pendingStatus = null;
+        });
+    }
 });
     </script>
+        <!-- ========== Job Status Confirmation Modal ========== -->
+        <div class="modal fade"
+                 id="confirmStatusModal"
+                 tabindex="-1"
+                 aria-labelledby="confirmStatusLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                                <div class="modal-header bg-warning text-dark">
+                                        <h5 class="modal-title" id="confirmStatusLabel">Confirm Status Change</h5>
+                                        <button type="button"
+                                                        class="btn-close"
+                                                        data-bs-dismiss="modal"
+                                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                        <p>Are you sure you want to update this job status?</p>
+                                </div>
+                                <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-danger" id="confirm-status-btn">Yes, update</button>
+                                </div>
+                        </div>
+                </div>
+        </div>
     <!-- ========== Action Buttons ========== -->
     <div class="d-flex justify-content-center gap-2 mt-4">
         <a href="{% url 'veeam_records' %}" class="btn btn-outline-secondary">
