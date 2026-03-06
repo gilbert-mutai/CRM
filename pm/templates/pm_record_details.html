@@ -144,8 +144,14 @@
                     </th>
                     <td>
                         {% if user == project.engineer or user.is_staff %}
-                            <div id="comment-view">{{ project.comment|default:"Click to add comment"|truncatechars:50 }}</div>
-                            <textarea id="comment-input" class="form-control d-none" rows="3">{{ project.comment }}</textarea>
+                      <div id="comment-view"
+                         data-full-value="{{ project.comment|default_if_none:''|escape }}">
+                        {{ project.comment|default:"Click to add comment"|truncatechars:50 }}
+                      </div>
+                      <textarea id="comment-input"
+                            class="form-control d-none"
+                            rows="3"
+                            placeholder="Click to add comment">{{ project.comment|default_if_none:'' }}</textarea>
                             <div class="mt-2 d-none" id="comment-actions">
                                 <button class="btn btn-sm btn-primary" id="comment-save">Save</button>
                                 <button class="btn btn-sm btn-secondary" id="comment-cancel">Cancel</button>
@@ -418,22 +424,25 @@ descriptionSave.addEventListener("click", () => {
   const commentSave = document.getElementById("comment-save");
   const commentCancel = document.getElementById("comment-cancel");
   const commentSuccessMsg = document.getElementById("comment-success-msg");
+  const commentPlaceholder = "Click to add comment";
 
   if (commentView) {
     commentView.addEventListener("click", () => {
       commentView.classList.add("d-none");
       commentInput.classList.remove("d-none");
       commentActions.classList.remove("d-none");
+      commentInput.value = (commentView.dataset.fullValue || "").trim();
     });
 
     commentCancel.addEventListener("click", () => {
+      commentInput.value = commentView.dataset.fullValue || "";
       commentInput.classList.add("d-none");
       commentActions.classList.add("d-none");
       commentView.classList.remove("d-none");
     });
 
 commentSave.addEventListener("click", () => {
-  const currentText = commentView.textContent.trim().replace("…", "");
+  const currentText = (commentView.dataset.fullValue || "").trim();
   const newText = commentInput.value.trim();
 
   if (currentText === newText) {
@@ -454,8 +463,11 @@ commentSave.addEventListener("click", () => {
   })
   .then(res => res.json())
   .then(data => {
-    const truncated = data.comment.length > 50 ? data.comment.slice(0, 50) + "…" : data.comment;
-    commentView.textContent = truncated;
+    const fullValue = (data.comment || "").trim();
+    const truncated = fullValue.length > 50 ? fullValue.slice(0, 50) + "…" : fullValue;
+    commentView.dataset.fullValue = fullValue;
+    commentView.textContent = fullValue.length ? truncated : commentPlaceholder;
+    commentInput.value = fullValue;
     commentInput.classList.add("d-none");
     commentActions.classList.add("d-none");
     commentView.classList.remove("d-none");
