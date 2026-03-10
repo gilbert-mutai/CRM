@@ -18,8 +18,7 @@
         <form method="POST" action="{% url 'add_sdwan_record' %}">
             {% csrf_token %}
             <div class="mb-2">{{ form.client }}</div>
-            <div class="mb-2">{{ form.account_number }}</div>
-            <div class="mb-2">{{ form.provider }}</div>
+            <div class="mb-2">{{ form.providers }}</div>
             <div class="mt-4 d-flex gap-2">
                 <button type="submit" class="btn btn-outline-primary">Add Record</button>
                 <a href="{% url 'sdwan_records' %}" class="btn btn-outline-secondary">Back</a>
@@ -37,8 +36,8 @@ $(document).ready(function () {
         width: '100%'
     });
 
-    $('#id_provider').select2({
-        placeholder: 'Select Provider',
+    $('#id_providers').select2({
+        placeholder: 'Select Providers',
         allowClear: true,
         minimumResultsForSearch: 0,
         width: '100%'

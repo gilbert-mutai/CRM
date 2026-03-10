@@ -1,7 +1,7 @@
-from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db.models.functions import Lower, Trim
+from django.db import models
+
 from core.models import Client
 
 
@@ -23,23 +23,22 @@ class SDWAN(models.Model):
         verbose_name="Client",
     )
 
-    account_number = models.CharField(
-        max_length=50,
-        verbose_name="Account Number",
-    )
-
     PROVIDER_CHOICES = [
+        ("Hirani", "Hirani"),
+        ("JTL", "JTL"),
+        ("Zuku", "Zuku"),
+        ("VGG", "VGG"),
         ("Safaricom", "Safaricom"),
-        ("Liquid Telecom", "Liquid Telecom"),
-        ("Telkom", "Telkom"),
-        ("MTN", "MTN"),
-        ("Other", "Other"),
+        ("Simbanet", "Simbanet"),
+        ("Fon", "Fon"),
+        ("Vilcom", "Vilcom"),
+        ("Syokinet", "Syokinet"),
     ]
 
-    provider = models.CharField(
-        max_length=50,
-        choices=PROVIDER_CHOICES,
-        verbose_name="Provider",
+    providers = models.JSONField(
+        default=list,
+        verbose_name="Providers",
+        help_text="Select one or more providers",
     )
 
     last_updated = models.DateTimeField(auto_now=True, verbose_name="Last Updated")
@@ -55,44 +54,33 @@ class SDWAN(models.Model):
     def clean(self):
         super().clean()
 
-        if self.account_number:
-            self.account_number = self.account_number.strip()
+        if not isinstance(self.providers, list):
+            raise ValidationError({"providers": "Invalid provider data."})
 
-        if self.client_id and self.account_number:
-            duplicate_qs = (
-                SDWAN.objects.annotate(normalized_account=Lower(Trim("account_number")))
-                .filter(
-                    client=self.client,
-                    normalized_account=self.account_number.lower(),
-                )
-            )
-            if self.pk:
-                duplicate_qs = duplicate_qs.exclude(pk=self.pk)
-
-            if duplicate_qs.exists():
+        allowed = {choice for choice, _ in self.PROVIDER_CHOICES}
+        cleaned = []
+        for provider in self.providers:
+            if provider not in allowed:
                 raise ValidationError(
-                    {
-                        "account_number": (
-                            "This account number already exists for the selected client."
-                        )
-                    }
+                    {"providers": f"'{provider}' is not an allowed provider."}
                 )
+            if provider not in cleaned:
+                cleaned.append(provider)
+
+        self.providers = cleaned
+
+    @property
+    def primary_provider(self):
+        return self.providers[0] if self.providers else None
+
+    def get_providers_display(self):
+        return ", ".join(self.providers) if self.providers else "-"
 
     def __str__(self):
-        return f"{self.client.name} - {self.provider} ({self.account_number})"
+        provider_label = self.primary_provider or "No Provider"
+        return f"{self.client.name} - {provider_label}"
 
     class Meta:
-        indexes = [
-            models.Index(fields=["account_number"]),
-            models.Index(fields=["provider"]),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                "client",
-                Lower(Trim("account_number")),
-                name="unique_client_account_number_ci",
-            )
-        ]
         ordering = ["-last_updated"]
         verbose_name = "SD-WAN"
         verbose_name_plural = "SD-WAN Records"
