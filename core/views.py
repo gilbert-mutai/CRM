@@ -14,10 +14,6 @@ from .forms import AddClientForm, ClientUpdateForm, NotificationForm
 from core.constants import SIGNATURE_BLOCKS as SIGNATURES
 
 
-def home(request):
-    return render(request, "home.html")
-
-
 @login_required
 def access_center(request): 
     client_sections = [

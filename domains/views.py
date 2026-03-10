@@ -89,7 +89,7 @@ def domain_records(request):
 def domain_record_details(request, pk):
     if not request.user.is_authenticated:
         messages.warning(request, "You must be logged in to view that page.")
-        return redirect("home")
+        return redirect("access_center")
 
     customer_record = get_record_by_id(pk)
     context = {
