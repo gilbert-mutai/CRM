@@ -16,10 +16,6 @@
                     <td>{{ customer_record.client.name }}</td>
                 </tr>
                 <tr>
-                    <th><i class="bi bi-hash me-2 text-secondary"></i>Account Number</th>
-                    <td>{{ customer_record.account_number }}</td>
-                </tr>
-                <tr>
                     <th><i class="bi bi-person-fill me-2 text-secondary"></i>Contact Person</th>
                     <td>{{ customer_record.client.contact_person|default:"-" }}</td>
                 </tr>
@@ -36,8 +32,8 @@
                     <td>{{ customer_record.client.phone_number }}</td>
                 </tr>
                 <tr>
-                    <th><i class="bi bi-diagram-3-fill me-2 text-secondary"></i>Provider</th>
-                    <td>{{ customer_record.provider }}</td>
+                    <th><i class="bi bi-diagram-3-fill me-2 text-secondary"></i>Providers</th>
+                    <td>{{ customer_record.get_providers_display }}</td>
                 </tr>
                 <!-- Timestamps -->
                 <tr>

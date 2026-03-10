@@ -63,11 +63,9 @@ def sdwan_records(request):
     )
 
     if query:
-        records = records.filter(
-            Q(client__name__icontains=query) | Q(account_number__icontains=query)
-        )
+        records = records.filter(Q(client__name__icontains=query))
     if provider_filter:
-        records = records.filter(provider=provider_filter)
+        records = records.filter(providers__contains=[provider_filter])
 
     # Pagination
     try:
@@ -92,7 +90,7 @@ def sdwan_records(request):
         "page_size": page_size,
         "search_query": query,
         "selected_provider": provider_filter,
-        "provider_choices": dict(SDWAN.PROVIDER_CHOICES),
+        "provider_choices": SDWAN.PROVIDER_CHOICES,
         "querystring": querystring,
     }
     return render(request, "sdwan_records.html", context)
@@ -278,8 +276,7 @@ def export_selected_sdwan_records(request):
         [
             "ID",
             "Company Name",
-            "Account Number",
-            "Provider",
+            "Providers",
             "Contact Person",
             "Primary Email",
             "Secondary Email",
@@ -294,8 +291,7 @@ def export_selected_sdwan_records(request):
             [
                 sdwan.id,
                 sdwan.client.name,
-                sdwan.account_number,
-                sdwan.provider,
+                sdwan.get_providers_display(),
                 sdwan.client.contact_person,
                 sdwan.client.primary_email,
                 sdwan.client.secondary_email or "",
