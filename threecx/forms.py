@@ -82,12 +82,13 @@ class UpdateThreeCXForm(BaseThreeCXForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Use clear field labels (without placeholders)
-        self.fields["client"].label = "Client"
-        self.fields["fqdn"].label = "FQDN"
-        self.fields["sip_providers"].label = "SIP Providers"
-        self.fields["license_type"].label = "License Type"
-        self.fields["simultaneous_calls"].label = "Simultaneous Calls"
-        self.fields["fqdn"].widget.attrs.pop("placeholder", None)
-        self.fields["simultaneous_calls"].widget.attrs.pop("placeholder", None)
+        # Mirror add-form styling (labels hidden, rely on placeholders)
+        for field in self.fields.values():
+            field.label = ""
+
+        self.fields["fqdn"].widget.attrs.setdefault("placeholder", "FQDN")
+        self.fields["simultaneous_calls"].widget.attrs.setdefault(
+            "placeholder", "Simultaneous Calls"
+        )
         self.fields["sip_providers"].widget.attrs["data-placeholder"] = "Select SIP Providers"
+        self.fields["license_type"].widget.attrs["data-placeholder"] = "Select License Type"
