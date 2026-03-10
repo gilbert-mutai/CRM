@@ -1,6 +1,12 @@
 from django import forms
-from .models import VeeamJob
+from django.contrib.auth import get_user_model
+
 from core.models import Client
+
+from .models import VeeamJob
+
+
+Engineer = get_user_model()
 
 
 class ClientNameOnlyChoiceField(forms.ModelChoiceField):
@@ -13,6 +19,14 @@ class BaseVeeamForm(forms.ModelForm):
         queryset=Client.objects.order_by("name"),
         widget=forms.Select(attrs={"class": "form-control", "id": "id_client"}),
         empty_label="Select Client",
+    )
+
+    engineer = forms.ModelChoiceField(
+        queryset=Engineer.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-control", "id": "id_engineer"}),
+        empty_label="Select Engineer",
+        label="Engineer",
     )
 
     site = forms.ChoiceField(
@@ -42,12 +56,13 @@ class BaseVeeamForm(forms.ModelForm):
     tag = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={"class": "form-control"}),
-        initial="Not set",
     )
 
     comment = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+        widget=forms.Textarea(
+            attrs={"class": "form-control", "rows": 3, "placeholder": "Add comment"}
+        ),
     )
 
     class Meta:
@@ -60,8 +75,17 @@ class BaseVeeamForm(forms.ModelForm):
             "os",
             "managed_by",
             "job_status",
+            "engineer",
             "comment",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["engineer"].queryset = (
+            Engineer.objects.filter(groups__name="Engineers")
+            .order_by("first_name", "last_name")
+            .distinct()
+        )
 
 
 class AddVeeamForm(BaseVeeamForm):
@@ -73,6 +97,7 @@ class AddVeeamForm(BaseVeeamForm):
             field.label = ""
         self.fields["computer_name"].widget.attrs["placeholder"] = "Computer Name"
         self.fields["tag"].widget.attrs["placeholder"] = "Tag (Optional)"
+        self.fields["engineer"].widget.attrs["data-placeholder"] = "Select Engineer"
 
 
 class UpdateVeeamForm(BaseVeeamForm):
@@ -86,3 +111,6 @@ class UpdateVeeamForm(BaseVeeamForm):
         self.fields["tag"].label = "Tag"
         self.fields["os"].label = "Operating System"
         self.fields["managed_by"].label = "Managed By"
+        self.fields["job_status"].label = "Job Status"
+        self.fields["engineer"].label = "Engineer"
+        self.fields["comment"].label = "Comment"

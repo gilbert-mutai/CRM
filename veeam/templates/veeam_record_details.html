@@ -98,6 +98,18 @@
                         {% endif %}
                     </td>
                 </tr>
+                <tr>
+                    <th>
+                        <i class="bi bi-person-badge me-2 text-secondary"></i>Engineer
+                    </th>
+                    <td>
+                        {% if customer_record.engineer %}
+                            {{ customer_record.engineer.get_full_name|default:customer_record.engineer.email }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
                 <!-- Comment (Inline editable) -->
                 <tr>
                     <th>
