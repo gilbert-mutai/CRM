@@ -1,6 +1,8 @@
 from django import forms
-from .models import ThreeCX
+
 from core.models import Client
+
+from .models import ThreeCX
 
 # Allowed simultaneous call values
 SC_VALUES = [1, 2, 4, 8, 16, 24, 32, 48, 64, 96, 128, 256]
@@ -18,9 +20,12 @@ class BaseThreeCXForm(forms.ModelForm):
         empty_label="Select Client",
     )
 
-    sip_provider = forms.ChoiceField(
+    sip_providers = forms.MultipleChoiceField(
         choices=ThreeCX.SIP_PROVIDERS,
-        widget=forms.Select(attrs={"class": "form-control"}),
+        widget=forms.SelectMultiple(
+            attrs={"class": "form-control", "id": "id_sip_providers"}
+        ),
+        initial=["None"],
     )
 
     fqdn = forms.CharField(
@@ -49,7 +54,7 @@ class BaseThreeCXForm(forms.ModelForm):
         fields = [
             "client",
             "fqdn",
-            "sip_provider",
+            "sip_providers",
             "license_type",
             "simultaneous_calls",
         ]
@@ -62,7 +67,7 @@ class AddThreeCXForm(BaseThreeCXForm):
         # Remove labels and use placeholders instead
         self.fields["client"].label = ""
         self.fields["fqdn"].label = ""
-        self.fields["sip_provider"].label = ""
+        self.fields["sip_providers"].label = ""
         self.fields["license_type"].label = ""
         self.fields["simultaneous_calls"].label = ""
 
@@ -70,6 +75,7 @@ class AddThreeCXForm(BaseThreeCXForm):
         self.fields["simultaneous_calls"].widget.attrs[
             "placeholder"
         ] = "Simultaneous Calls"
+        self.fields["sip_providers"].widget.attrs["data-placeholder"] = "Select SIP Providers"
 
 
 class UpdateThreeCXForm(BaseThreeCXForm):
@@ -79,8 +85,9 @@ class UpdateThreeCXForm(BaseThreeCXForm):
         # Use clear field labels (without placeholders)
         self.fields["client"].label = "Client"
         self.fields["fqdn"].label = "FQDN"
-        self.fields["sip_provider"].label = "SIP Provider"
+        self.fields["sip_providers"].label = "SIP Providers"
         self.fields["license_type"].label = "License Type"
         self.fields["simultaneous_calls"].label = "Simultaneous Calls"
         self.fields["fqdn"].widget.attrs.pop("placeholder", None)
         self.fields["simultaneous_calls"].widget.attrs.pop("placeholder", None)
+        self.fields["sip_providers"].widget.attrs["data-placeholder"] = "Select SIP Providers"

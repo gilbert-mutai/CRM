@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 
 from core.models import Client
-from .forms import AddThreeCXForm
+from .forms import AddThreeCXForm, UpdateThreeCXForm
 import csv
 from django.http import HttpResponse
 from .utils import (
@@ -62,7 +62,7 @@ def threecx_records(request):
         )
 
     if sip_filter:
-        records = records.filter(sip_provider=sip_filter)
+        records = records.filter(sip_providers__contains=[sip_filter])
 
     if license_filter:
         records = records.filter(license_type=license_filter)
@@ -87,7 +87,7 @@ def threecx_records(request):
         "search_query": query,
         "selected_sip": sip_filter,
         "selected_license": license_filter,
-        "sip_providers": dict(ThreeCX.SIP_PROVIDERS),
+        "sip_providers": ThreeCX.SIP_PROVIDERS,
         "license_types": dict(ThreeCX.LICENSE_TYPES),
     }
 
@@ -153,7 +153,7 @@ def update_threecx_record(request, pk):
         raise PermissionDenied
 
     current_record = get_record_by_id(pk)
-    form = AddThreeCXForm(request.POST or None, instance=current_record)
+    form = UpdateThreeCXForm(request.POST or None, instance=current_record)
 
     if form.is_valid():
         updated_record = form.save(commit=False)
@@ -293,7 +293,7 @@ def export_selected_threecx_records(request):
                 rec.client.primary_email,
                 rec.client.secondary_email or "",
                 rec.client.phone_number,
-                rec.get_sip_provider_display(),
+                rec.get_sip_providers_display(),
                 rec.fqdn,
                 rec.get_license_type_display(),
                 rec.simultaneous_calls,

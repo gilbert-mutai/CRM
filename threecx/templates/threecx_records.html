@@ -37,8 +37,8 @@
                         aria-label="Filter by SIP Provider"
                         id="sip-select">
                     <option value="">All SIP Providers</option>
-                    {% for sip in sip_providers %}
-                        <option value="{{ sip }}" {% if sip == selected_sip %}selected{% endif %}>{{ sip }}</option>
+                    {% for key, label in sip_providers %}
+                        <option value="{{ key }}" {% if key == selected_sip %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -82,7 +82,7 @@
                     <th scope="col">Company/Username</th>
                     <th scope="col">Contact Person</th>
                     <th scope="col">Primary Email</th>
-                    <th scope="col">SIP Provider</th>
+                    <th scope="col">SIP Providers</th>
                     <th scope="col">FQDN</th>
                     <th scope="col">License Type</th>
                     <th scope="col">SC</th>
@@ -106,7 +106,7 @@
                         <td>{{ record.client.name }}</td>
                         <td>{{ record.client.contact_person }}</td>
                         <td>{{ record.client.primary_email }}</td>
-                        <td>{{ record.get_sip_provider_display }}</td>
+                        <td>{{ record.get_sip_providers_display }}</td>
                         <td>{{ record.fqdn }}</td>
                         <td>{{ record.get_license_type_display }}</td>
                         <td>{{ record.simultaneous_calls }} SC</td>
@@ -118,7 +118,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="10" class="text-center">No records found.</td>
+                        <td colspan="9" class="text-center">No records found.</td>
                     </tr>
                 {% endfor %}
             </tbody>
