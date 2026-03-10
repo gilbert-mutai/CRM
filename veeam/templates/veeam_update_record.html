@@ -34,6 +34,10 @@
                 {{ form.job_status }}
             </div>
             <div class="mb-3">
+                <label for="{{ form.engineer.id_for_label }}" class="form-label">Engineer</label>
+                {{ form.engineer }}
+            </div>
+            <div class="mb-3">
                 <label for="{{ form.comment.id_for_label }}" class="form-label">Comment</label>
                 {{ form.comment }}
             </div>
@@ -52,6 +56,14 @@ $(document).ready(function () {
     if ($('#id_client').length) {
         $('#id_client').select2({
             placeholder: 'Select Client',
+            allowClear: true,
+            width: '100%'
+        });
+    }
+
+    if ($('#id_engineer').length) {
+        $('#id_engineer').select2({
+            placeholder: 'Select Engineer',
             allowClear: true,
             width: '100%'
         });

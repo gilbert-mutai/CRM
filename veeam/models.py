@@ -47,9 +47,7 @@ class VeeamJob(models.Model):
 
     site = models.CharField(max_length=50, choices=SITE_CHOICES, verbose_name="Site")
     computer_name = models.CharField(max_length=100, verbose_name="Computer Name")
-    tag = models.CharField(
-        max_length=100, default="Not set", blank=True, verbose_name="Tag"
-    )
+    tag = models.CharField(max_length=100, blank=True, verbose_name="Tag")
     os = models.CharField(
         max_length=20, choices=OS_CHOICES, verbose_name="Operating System"
     )
@@ -61,6 +59,15 @@ class VeeamJob(models.Model):
         choices=JOB_STATUS_CHOICES,
         default="Running",
         verbose_name="Job Status",
+    )
+    engineer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="veeam_jobs",
+        verbose_name="Engineer",
+        limit_choices_to={"groups__name": "Engineers"},
     )
     comment = models.TextField(blank=True, null=True, verbose_name="Comment")
 

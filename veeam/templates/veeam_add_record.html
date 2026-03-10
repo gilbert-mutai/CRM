@@ -18,13 +18,13 @@
         <form method="POST" action="{% url 'add_veeam_record' %}">
             {% csrf_token %}
             <div class="mb-2">{{ form.client }}</div>
-            <div class="mb-2">{{ form.contact_person }}</div>
-            <div class="mb-2">{{ form.email }}</div>
             <div class="mb-2">{{ form.site }}</div>
             <div class="mb-2">{{ form.computer_name }}</div>
+            <div class="mb-2">{{ form.tag }}</div>
             <div class="mb-2">{{ form.os }}</div>
             <div class="mb-2">{{ form.managed_by }}</div>
             <div class="mb-2">{{ form.job_status }}</div>
+            <div class="mb-2">{{ form.engineer }}</div>
             <div class="mb-2">{{ form.comment }}</div>
             <div class="mt-4 d-flex gap-2">
                 <button type="submit" class="btn btn-outline-primary">Add Record</button>
@@ -66,6 +66,13 @@ $(document).ready(function () {
 
     $('#id_job_status').select2({
         placeholder: 'Select Job Status',
+        allowClear: true,
+        minimumResultsForSearch: 0,
+        width: '100%'
+    });
+
+    $('#id_engineer').select2({
+        placeholder: 'Select Engineer',
         allowClear: true,
         minimumResultsForSearch: 0,
         width: '100%'
