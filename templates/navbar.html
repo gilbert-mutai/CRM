@@ -2,7 +2,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top border-bottom border-secondary">
     <div class="container-fluid px-4">
         <!-- Brand -->
-        <a class="navbar-brand fw-bold text-info" href="{% url 'home' %}">Client Manager</a>
+        <a class="navbar-brand fw-bold text-info" href="{% url 'access_center' %}">Client Manager</a>
         <!-- Toggler for mobile -->
         <button class="navbar-toggler"
                 type="button"
@@ -16,16 +16,6 @@
         <!-- Navbar Content -->
         <div class="collapse navbar-collapse" id="mainNavbar">
             <!-- ===== Left Nav Menu ===== -->
-            {% if user.is_authenticated %}
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'access_center' %}active{% endif %}"
-                           href="{% url 'access_center' %}">
-                            <i class="bi bi-grid me-1"></i> Access Center
-                        </a>
-                    </li>
-                </ul>
-            {% endif %}
             <!-- ===== Right Nav: Profile / Auth ===== -->
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                 {% if user.is_authenticated %}

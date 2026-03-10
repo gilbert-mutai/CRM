@@ -10,8 +10,9 @@ body {
 }
 
 body.home-bg {
-  background-color: #2d3e50; /* Dark background for homepage */
-  color: #f4f6f8;
+  background-image: linear-gradient(145deg, #f4f6fb, #e2e7ef);
+  color: #0f1b2c;
+  min-height: 100vh;
 }
 
 /* Background for login page (optional: controlled by body class) */
@@ -399,14 +400,180 @@ tr[data-href]:hover {
     font-weight: 600;
 }
 
-.btn-outline-primary,
-.btn-outline-success,
-.btn-outline-danger,
-.btn-outline-warning,
-.btn-outline-info {
-    border-width: 2px;
+/* ===========================
+   13. Access Center Theme
+   =========================== */
+
+.access-center-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 4rem;
+  padding-bottom: 6rem;
 }
 
+.access-hero-text h1 {
+  font-size: 2.4rem;
+  font-weight: 600;
+  color: #0d6efd;
+}
+
+.light-home .access-hero-text h1 {
+  color: #0d47a1;
+}
+
+.hero-lead {
+  color: rgba(244, 246, 248, 0.78);
+}
+
+.light-home .hero-lead {
+  color: rgba(15, 27, 44, 0.7);
+}
+
+.access-module-card {
+  background: #142137;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 15px 40px rgba(3, 10, 22, 0.35);
+  color: #f4f6f8;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.light-home .access-module-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 27, 44, 0.08);
+  box-shadow: 0 15px 35px rgba(15, 27, 44, 0.08);
+  color: #0f1b2c;
+}
+
+.access-module-card::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 16px;
+  right: 16px;
+  height: 8px;
+  border-radius: 999px 999px 0 0;
+  opacity: 0.95;
+}
+
+.access-module-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 25px 40px rgba(0, 0, 0, 0.45);
+}
+
+.module-icon-pill {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.light-home .module-icon-pill {
+  background: rgba(15, 27, 44, 0.08);
+}
+
+.access-center-wrapper .text-muted {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.access-center-wrapper small.text-muted {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.light-home .access-center-wrapper .text-muted,
+.light-home .access-center-wrapper small.text-muted,
+.light-home .module-description {
+  color: rgba(15, 27, 44, 0.65) !important;
+}
+
+.module-description {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+}
+
+.module-btn {
+  font-weight: 600;
+  border: none;
+}
+
+.module-btn-success {
+  background: #1fb26b;
+  color: #fff;
+}
+
+.module-btn-primary {
+  background: #2576ff;
+  color: #fff;
+}
+
+.module-btn-warning {
+  background: #f3b307;
+  color: #1f1200;
+}
+
+.module-btn-success:hover,
+.module-btn-primary:hover,
+.module-btn-warning:hover {
+  border: 2px solid transparent;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.module-btn-success:hover {
+  background: #1fb26b;
+  color: #ffffff;
+  border-color: rgba(31, 178, 107, 0.45);
+  outline-color: rgba(31, 178, 107, 0.8);
+}
+
+.module-btn-primary:hover {
+  background: #2576ff;
+  color: #ffffff;
+  border-color: rgba(37, 118, 255, 0.45);
+  outline-color: rgba(37, 118, 255, 0.8);
+}
+
+.module-btn-warning:hover {
+  background: #f3b307;
+  color: #1f1200;
+  border-color: rgba(243, 179, 7, 0.45);
+  outline-color: rgba(243, 179, 7, 0.8);
+}
+
+.light-home .module-btn-success,
+.light-home .module-btn-primary,
+.light-home .module-btn-warning {
+  color: #fff;
+}
+
+.accent-success {
+  border: 1px solid rgba(31, 178, 107, 0.6);
+}
+
+.accent-primary {
+  border: 1px solid rgba(37, 118, 255, 0.6);
+}
+
+.accent-warning {
+  border: 1px solid rgba(243, 179, 7, 0.6);
+}
+
+.accent-success::before {
+  background: #1fb26b;
+}
+
+.accent-primary::before {
+  background: #2576ff;
+}
+
+.accent-warning::before {
+  background: #f3b307;
+}
 
 @keyframes spin {
   0% {

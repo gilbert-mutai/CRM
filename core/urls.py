@@ -2,8 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("", views.home, name="home"),
-    path("access-center/", views.access_center, name="access_center"),
+    path("", views.access_center, name="access_center"),
+    path("access-center/", views.access_center, name="access_center_legacy"),
     path("clients/", views.client_records, name="client_records"),
     path("client/<int:pk>/", views.client_record, name="client_record"),
     path("client/add/", views.add_client_record, name="add_client_record"),
