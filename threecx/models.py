@@ -1,7 +1,12 @@
-from django.db import models
 from django.conf import settings
-from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+from django.db import models
+
 from core.models import Client
+
+
+def default_sip_provider_list():
+    return ["None"]
 
 
 class ThreeCX(models.Model):
@@ -28,7 +33,11 @@ class ThreeCX(models.Model):
         ("Airtel", "Airtel"),
         ("JTL", "JTL"),
     ]
-    sip_provider = models.CharField(max_length=20, choices=SIP_PROVIDERS, default="None")
+    sip_providers = models.JSONField(
+        default=default_sip_provider_list,
+        verbose_name="SIP Providers",
+        help_text="Select one or more SIP providers",
+    )
 
     fqdn = models.CharField(max_length=100, unique=True)
 
@@ -59,12 +68,36 @@ class ThreeCX(models.Model):
     def clean(self):
         super().clean()
 
+        if not isinstance(self.sip_providers, list):
+            raise ValidationError({"sip_providers": "Invalid provider data."})
+
+        allowed = {value for value, _ in self.SIP_PROVIDERS}
+        cleaned = []
+
+        for provider in self.sip_providers:
+            if provider not in allowed:
+                raise ValidationError(
+                    {"sip_providers": f"'{provider}' is not an allowed SIP provider."}
+                )
+
+            if provider not in cleaned:
+                cleaned.append(provider)
+
+        self.sip_providers = cleaned
+
+    @property
+    def primary_sip_provider(self):
+        return self.sip_providers[0] if self.sip_providers else None
+
+    def get_sip_providers_display(self):
+        return ", ".join(self.sip_providers) if self.sip_providers else "-"
+
     def __str__(self):
-        return f"{self.client.name} - {self.fqdn}"
+        primary = self.primary_sip_provider or "No SIP Provider"
+        return f"{self.client.name} - {self.fqdn} ({primary})"
 
     class Meta:
         indexes = [
             models.Index(fields=["fqdn"]),
-            models.Index(fields=["sip_provider"]),
             models.Index(fields=["license_type"]),
         ]

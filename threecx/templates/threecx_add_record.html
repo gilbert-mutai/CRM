@@ -27,9 +27,9 @@
                 {{ form.fqdn }}
             </div>
             <div class="mb-2">
-                <label for="{{ form.sip_provider.id_for_label }}"
-                       class="form-label visually-hidden">SIP Provider</label>
-                {{ form.sip_provider }}
+                <label for="{{ form.sip_providers.id_for_label }}"
+                       class="form-label visually-hidden">SIP Providers</label>
+                {{ form.sip_providers }}
             </div>
             <div class="mb-2">
                 <label for="{{ form.license_type.id_for_label }}"
@@ -58,8 +58,8 @@ $(document).ready(function () {
         width: '100%'
     });
 
-    $('#id_sip_provider').select2({
-        placeholder: 'Select SIP Provider',
+    $('#id_sip_providers').select2({
+        placeholder: 'Select SIP Providers',
         allowClear: true,
         minimumResultsForSearch: 0,
         width: '100%'
