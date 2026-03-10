@@ -106,7 +106,7 @@
                         {% if customer_record.engineer %}
                             {{ customer_record.engineer.get_full_name|default:customer_record.engineer.email }}
                         {% else %}
-                            -
+                            <span class="text-muted">Unassigned</span>
                         {% endif %}
                     </td>
                 </tr>

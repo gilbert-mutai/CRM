@@ -6,6 +6,7 @@ import json
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
@@ -59,6 +60,9 @@ def veeam_records(request):
     site_filter = request.GET.get("site", "")
     os_filter = request.GET.get("os", "")
     status_filter = request.GET.get("job_status", "")
+    engineer_filter = request.GET.get("engineer", "")
+
+    Engineer = get_user_model()
 
     records = VeeamJob.objects.select_related("client").order_by(
         "client__name", "client__primary_email", "id"
@@ -74,6 +78,13 @@ def veeam_records(request):
         records = records.filter(os=os_filter)
     if status_filter:
         records = records.filter(job_status=status_filter)
+    if engineer_filter == "unassigned":
+        records = records.filter(engineer__isnull=True)
+    elif engineer_filter:
+        try:
+            records = records.filter(engineer_id=int(engineer_filter))
+        except (TypeError, ValueError):
+            engineer_filter = ""
 
     # Pagination
     try:
@@ -101,9 +112,15 @@ def veeam_records(request):
         "selected_site": site_filter,
         "selected_os": os_filter,
         "selected_status": status_filter,
+        "selected_engineer": engineer_filter,
         "site_choices": dict(VeeamJob.SITE_CHOICES),
         "os_choices": dict(VeeamJob.OS_CHOICES),
         "status_choices": dict(VeeamJob.JOB_STATUS_CHOICES),
+        "engineer_choices": Engineer.objects.filter(
+            groups__name="Engineers"
+        )
+        .order_by("first_name", "last_name")
+        .distinct(),
         "querystring": querystring,
     }
 
