@@ -23,13 +23,13 @@ from core.constants import SIGNATURE_BLOCKS as SIGNATURES
 def notify_domain(action, company_name, user):
     user_name = user.get_full_name() or user.email
     if action == "add":
-        message = f"CRM Updates (Domains & Hosting): A new domain record for {company_name} has been added by {user_name}."
+        message = f"(Domains & Hosting): A new domain record for {company_name} has been added by {user_name}."
     elif action == "update":
-        message = f"CRM Updates (Domains & Hosting): Domain record for {company_name} has been modified by {user_name}."
+        message = f"Domain record for {company_name} has been modified by {user_name}."
     elif action == "delete":
-        message = f"CRM Updates (Domains & Hosting): Domain record for {company_name} has been deleted by {user_name}."
+        message = f"(Domains & Hosting): Domain record for {company_name} has been deleted by {user_name}."
     else:
-        message = f"CRM Updates (Domains & Hosting): Domain record for {company_name} was changed by {user_name}."
+        message = f"(Domains & Hosting): Domain record for {company_name} was changed by {user_name}."
 
     send_to_mattermost(message)
 

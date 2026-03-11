@@ -38,13 +38,13 @@ from core.mattermost import send_to_mattermost,send_email_alert_to_mattermost
 def notify_sdwan(action, company_name, user):
     user_name = user.get_full_name() or user.email
     if action == "add":
-        message = f"CRM Updates (SD-WAN): A new SD-WAN record for {company_name} has been added by {user_name}."
+        message = f"A new SD-WAN record for {company_name} has been added by {user_name}."
     elif action == "update":
-        message = f"CRM Updates (SD-WAN): SD-WAN record for {company_name} has been modified by {user_name}."
+        message = f"SD-WAN record for {company_name} has been modified by {user_name}."
     elif action == "delete":
-        message = f"CRM Updates (SD-WAN): SD-WAN record for {company_name} has been deleted by {user_name}."
+        message = f"SD-WAN record for {company_name} has been deleted by {user_name}."
     else:
-        message = f"CRM Updates (SD-WAN): SD-WAN record for {company_name} was changed by {user_name}."
+        message = f"SD-WAN record for {company_name} was changed by {user_name}."
 
     send_to_mattermost(message)
 

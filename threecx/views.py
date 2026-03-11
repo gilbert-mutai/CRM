@@ -29,14 +29,14 @@ from core.constants import SIGNATURE_BLOCKS as SIGNATURES
 def notify_threecx(action, company_name, user):
     user_name = user.get_full_name() or user.email
     if action == "add":
-        message = f"CRM updates: A new 3CX record for {company_name} has been added by {user_name}"
+        message = f"(3CX):A new 3CX record for {company_name} has been added by {user_name}"
     elif action == "update":
-        message = f"CRM updates: 3CX record for {company_name} has been modified by {user_name}"
+        message = f"(3CX): 3CX record for {company_name} has been modified by {user_name}"
     elif action == "delete":
-        message = f"CRM updates: 3CX record for {company_name} has been deleted by {user_name}"
+        message = f"(3CX): 3CX record for {company_name} has been deleted by {user_name}"
     else:
-        message = f"CRM updates: 3CX record for {company_name} was changed by {user_name}"
-
+        message = f"3CX record for {company_name} was changed by {user_name}"
+    
     send_to_mattermost(message)
 
 
