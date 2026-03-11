@@ -105,11 +105,11 @@ def can_delete_client(user):
 def notify_client(action, client_name, user):
     user_display = user.get_full_name() or user.email
     if action == "add":
-        msg = f"CRM Updates: A new client called **{client_name}** has been added by **{user_display}**"
+        msg = f"(Customer Master): A new client called **{client_name}** has been added by **{user_display}**"
     elif action == "update":
-        msg = f"CRM Updates: The client called **{client_name}** has been modified by **{user_display}**"
+        msg = f"(Customer Master): The client called **{client_name}** has been modified by **{user_display}**"
     elif action == "delete":
-        msg = f"CRM Updates: The client called **{client_name}** has been deleted by **{user_display}**"
+        msg = f"(Customer Master): The client called **{client_name}** has been deleted by **{user_display}**"
     else:
         return
     send_to_mattermost(msg)
