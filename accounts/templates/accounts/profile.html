@@ -12,6 +12,8 @@
     <p class="text-muted mb-3"><small>{{ user.email }}</small></p>
   {% endif %}
 
+  <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+
   <div class="card mb-3">
     <div class="card-header">
       <h5 class="mb-0">Account Settings</h5>

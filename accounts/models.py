@@ -25,12 +25,33 @@ class CustomUserManager(BaseUserManager):
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    ROLE_SUPPORT_ENGINEER = "cloud_support_engineer"
+    ROLE_INFRA_ENGINEER = "infra_engineer"
+    ROLE_SERVICE_DELIVERY_ENGINEER = "service_delivery_engineer"
+    ROLE_ACCOUNT_MANAGER = "account_manager"
+    ROLE_SALES_ADMIN = "sales_admin"
+
+    ROLE_CHOICES = [
+        (ROLE_SUPPORT_ENGINEER, "Cloud Support Engineer"),
+        (ROLE_INFRA_ENGINEER, "Infrastructure Engineer"),
+        (ROLE_SERVICE_DELIVERY_ENGINEER, "Service Delivery Engineer"),
+        (ROLE_ACCOUNT_MANAGER, "Account Manager"),
+        (ROLE_SALES_ADMIN, "Sales Admin"),
+    ]
+
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=30, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
+
+    role = models.CharField(
+        max_length=32,
+        choices=ROLE_CHOICES,
+        default=ROLE_SUPPORT_ENGINEER,
+        help_text="Role of the user in the system."
+    )
 
     # 2FA / TOTP fields
     totp_secret = models.CharField(
