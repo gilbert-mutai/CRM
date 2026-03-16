@@ -8,13 +8,13 @@ class CustomUserAdmin(UserAdmin):
     model = CustomUser
     add_form = SignUpForm
 
-    list_display = ("email", "first_name", "last_name", "is_staff", "is_2fa_enabled", "is_2fa_required")
+    list_display = ("email", "first_name", "last_name", "role", "is_staff", "is_2fa_enabled", "is_2fa_required")
     ordering = ("email",)
     search_fields = ("email",)
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Personal Info", {"fields": ("first_name", "last_name")}),
+        ("Personal Info", {"fields": ("first_name", "last_name", "role")}),
         (
             "Permissions",
             {
@@ -44,6 +44,7 @@ class CustomUserAdmin(UserAdmin):
                     "password2",
                     "first_name",
                     "last_name",
+                    "role",
                     "is_active",
                     "is_staff",
                     "is_superuser",

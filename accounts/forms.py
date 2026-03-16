@@ -42,9 +42,16 @@ class SignUpForm(UserCreationForm):
         help_text="",
     )
 
+    role = forms.ChoiceField(
+        choices=CustomUser.ROLE_CHOICES,
+        label="Role",
+        widget=forms.Select(attrs={"class": "form-control"}),
+        initial=CustomUser.ROLE_SUPPORT_ENGINEER,
+    )
+
     class Meta:
         model = CustomUser
-        fields = ("email", "first_name", "last_name", "password1", "password2")
+        fields = ("email", "first_name", "last_name", "role", "password1", "password2")
 
 
 class CustomSetPasswordForm(SetPasswordForm):
