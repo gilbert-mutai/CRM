@@ -591,12 +591,13 @@ def build_completion_certificate_pdf(project):
         ["", ""],
     ]
 
+    engineer_role = project.engineer.get_role_display() if project.engineer else "N/A"
     angani_signoff = [
         [Paragraph("<b>ANGANI SIGN OFF</b>", small_muted_style), ""],
         [Paragraph("Name", label_style), ""],
         [Paragraph(engineer, value_style), ""],
         [Paragraph("Designation", label_style), ""],
-        [Paragraph("Support Engineer", value_style), ""],
+        [Paragraph(engineer_role, value_style), ""],
         [Paragraph("Date", label_style), ""],
         [Paragraph(date_provisioned, value_style), ""],
         [Paragraph("Signature", label_style), ""],
