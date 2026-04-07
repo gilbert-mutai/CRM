@@ -591,6 +591,21 @@ def build_completion_certificate_pdf(project):
         ["", ""],
     ]
 
+    signature_path = os.path.join(settings.BASE_DIR, "static/images/signature.png")
+    signature_width = 85
+    signature_height = 18
+    if os.path.exists(signature_path):
+        signature_flowable = Image(
+            signature_path,
+            width=signature_width,
+            height=signature_height,
+        )
+        signature_flowable.hAlign = "LEFT"
+    else:
+        signature_flowable = Paragraph("Signature unavailable", small_muted_style)
+
+    signoff_row_heights = [16, 16, 22, 16, 22, 16, 22, 16, 26]
+
     engineer_role = project.engineer.get_role_display() if project.engineer else "N/A"
     angani_signoff = [
         [Paragraph("<b>ANGANI SIGN OFF</b>", small_muted_style), ""],
@@ -601,19 +616,30 @@ def build_completion_certificate_pdf(project):
         [Paragraph("Date", label_style), ""],
         [Paragraph(date_provisioned, value_style), ""],
         [Paragraph("Signature", label_style), ""],
-        [Paragraph("A.S", value_style), ""],
+        [signature_flowable, ""],
     ]
 
-    customer_table = Table(customer_signoff, colWidths=[220, 15])
-    angani_table = Table(angani_signoff, colWidths=[220, 15])
+    customer_table = Table(
+        customer_signoff,
+        colWidths=[220, 15],
+        rowHeights=signoff_row_heights,
+    )
+    angani_table = Table(
+        angani_signoff,
+        colWidths=[220, 15],
+        rowHeights=signoff_row_heights,
+    )
 
     for table in (customer_table, angani_table):
         table.setStyle(
             TableStyle(
                 [
                     ("FONTSIZE", (0, 0), (-1, -1), 9.5),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                     ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("TOPPADDING", (0, 8), (-1, 8), 1),
+                    ("BOTTOMPADDING", (0, 8), (-1, 8), 1),
                     ("LINEBELOW", (0, 2), (0, 2), 0.75, colors.HexColor("#9CA3AF")),
                     ("LINEBELOW", (0, 4), (0, 4), 0.75, colors.HexColor("#9CA3AF")),
                     ("LINEBELOW", (0, 6), (0, 6), 0.75, colors.HexColor("#9CA3AF")),
