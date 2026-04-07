@@ -9,6 +9,8 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from pdf2image import convert_from_bytes
 from PIL import Image as PilImage, ImageDraw, ImageFont
 from reportlab.platypus import (
@@ -108,6 +110,35 @@ def send_project_assignment_email(project, engineer, is_reassignment=False):
     )
     msg.send(fail_silently=True)
 
+
+def get_certificate_header_fonts():
+    regular_font = "CertificateHeader-Regular"
+    bold_font = "CertificateHeader-Bold"
+    font_candidates = {
+        regular_font: [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+        ],
+        bold_font: [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+        ],
+    }
+
+    registered_fonts = set(pdfmetrics.getRegisteredFontNames())
+    for font_name, candidates in font_candidates.items():
+        if font_name in registered_fonts:
+            continue
+        for font_path in candidates:
+            if os.path.exists(font_path):
+                pdfmetrics.registerFont(TTFont(font_name, font_path))
+                registered_fonts.add(font_name)
+                break
+
+    return (
+        bold_font if bold_font in registered_fonts else "Helvetica-Bold",
+        regular_font if regular_font in registered_fonts else "Helvetica",
+    )
 
 
 @login_required
@@ -516,11 +547,19 @@ def build_completion_certificate_pdf(project):
                 mask="auto",
             )
 
+        title_font, subtitle_font = get_certificate_header_fonts()
+
         canvas_obj.setFillColor(colors.white)
-        canvas_obj.setFont("Helvetica-Bold", 18)
-        canvas_obj.drawString(85, page_height - header_height + 25, "Job Completion Certificate")
-        canvas_obj.setFont("Helvetica", 10)
-        canvas_obj.drawString(85, page_height - header_height + 10, "Provisioned Service Completion Confirmation")
+        text_obj = canvas_obj.beginText()
+        text_obj.setTextOrigin(85, page_height - header_height + 25)
+        text_obj.setFont(title_font, 18)
+        text_obj.setCharSpace(0)
+        text_obj.setWordSpace(0)
+        text_obj.setLeading(14)
+        text_obj.textLine("Job Completion Certificate")
+        text_obj.setFont(subtitle_font, 10)
+        text_obj.textLine("Provisioned Service Completion Confirmation")
+        canvas_obj.drawText(text_obj)
 
     # Fields
     certificate_id = f"JCC-{project.id:06d}"
