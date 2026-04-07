@@ -1,66 +1,76 @@
 <!-- ========== Enhanced Navbar ========== -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top border-bottom border-secondary">
-    <div class="container-fluid px-4">
-        <!-- Brand -->
-        <a class="navbar-brand fw-bold text-info" href="{% url 'access_center' %}">Client Manager</a>
-        <!-- Toggler for mobile -->
-        <button class="navbar-toggler"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#mainNavbar"
-                aria-controls="mainNavbar"
-                aria-expanded="false"
-                aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <!-- Navbar Content -->
-        <div class="collapse navbar-collapse" id="mainNavbar">
-            <!-- ===== Left Nav Menu ===== -->
-            <!-- ===== Right Nav: Profile / Auth ===== -->
-            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                {% if user.is_authenticated %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center"
-                           href="#"
-                           id="profileDropdown"
-                           role="button"
-                           data-bs-toggle="dropdown"
-                           aria-expanded="false">
-                            <i class="bi bi-person-circle me-1"></i>
-                            {{ user.get_full_name|default:user.email }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-sm rounded-3 animate__animated animate__fadeIn"
-                            aria-labelledby="profileDropdown">
-                            {% if user.is_staff or user.is_superuser %}
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'accounts:register' %}">
-                                        <i class="bi bi-person-plus me-2"></i>Add User
-                                    </a>
-                                </li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                            {% endif %}
-                            <li>
-                                <a class="dropdown-item" href="{% url 'accounts:profile' %}">
-                                    <i class="bi bi-person me-2"></i>Profile
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{% url 'accounts:logout' %}">
-                                    <i class="bi bi-box-arrow-right me-2"></i>Logout
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'accounts:login' %}">
-                            <i class="bi bi-box-arrow-in-right me-1"></i>Login
-                        </a>
-                    </li>
-                {% endif %}
-            </ul>
-        </div>
+<nav
+  class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top border-bottom border-secondary"
+>
+  <div class="container-fluid px-4">
+    <!-- Brand -->
+    <a class="navbar-brand fw-bold text-info" href="{% url 'access_center' %}"
+      >Client Manager</a
+    >
+    <!-- Toggler for mobile -->
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#mainNavbar"
+      aria-controls="mainNavbar"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <!-- Navbar Content -->
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <!-- ===== Left Nav Menu ===== -->
+      <!-- ===== Right Nav: Profile / Auth ===== -->
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        {% if user.is_authenticated %}
+        <li class="nav-item dropdown">
+          <a
+            class="nav-link dropdown-toggle d-flex align-items-center"
+            href="#"
+            id="profileDropdown"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <i class="bi bi-person-circle me-1"></i>
+            {{ user.get_full_name|default:user.email }}
+          </a>
+          <ul
+            class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-sm rounded-3 animate__animated animate__fadeIn"
+            aria-labelledby="profileDropdown"
+          >
+            {% if user.is_staff or user.is_superuser %}
+            <li>
+              <a class="dropdown-item" href="{% url 'accounts:register' %}">
+                <i class="bi bi-person-plus me-2"></i>Add User
+              </a>
+            </li>
+            <li>
+              <hr class="dropdown-divider" />
+            </li>
+            {% endif %}
+            <li>
+              <a class="dropdown-item" href="{% url 'accounts:profile' %}">
+                <i class="bi bi-person me-2"></i>Profile
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{% url 'accounts:logout' %}">
+                <i class="bi bi-box-arrow-right me-2"></i>Logout
+              </a>
+            </li>
+          </ul>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'accounts:login' %}">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Login
+          </a>
+        </li>
+        {% endif %}
+      </ul>
     </div>
+  </div>
 </nav>
