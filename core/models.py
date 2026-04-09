@@ -20,6 +20,7 @@ class Client(models.Model):
     POP_IXAFRICA_NBO = "IXAfrica NBO"
     POP_RAXIO_UG = "Raxio UG"
     POP_TANZANIA = "Tanzania"
+    POP_DATANET_UG = "Datanet UG"
     
     POP_CHOICES = [
         (POP_ADC_NBO, "ADC NBO"),
@@ -28,6 +29,7 @@ class Client(models.Model):
         (POP_IXAFRICA_NBO, "IXAfrica NBO"),
         (POP_RAXIO_UG, "Raxio UG"),
         (POP_TANZANIA, "Tanzania"),
+        (POP_DATANET_UG, "Datanet UG"),
     ]
 
     client_type = models.CharField(

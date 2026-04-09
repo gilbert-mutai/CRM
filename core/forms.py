@@ -4,6 +4,10 @@ from core.utils import validate_emails
 from core.constants import SIGNATURE_CHOICES
 from django.core.validators import RegexValidator
 
+
+def _pop_field_name(pop_value):
+    return f"pop_{pop_value.lower().replace('-', '_').replace(' ', '_')}"
+
 # Label mapping for update form
 LABEL_MAP = {
     "name": "Full Name or Company",
@@ -31,14 +35,6 @@ class BaseClientForm(forms.ModelForm):
         validators=[RegexValidator(r"^\+?\d{7,15}$", "Enter a valid phone number.")],
         widget=forms.TextInput(attrs={"class": "form-control"}),
     )
-    
-    # Point of Presence checkboxes
-    pop_adc_nbo = forms.BooleanField(required=False, label="ADC NBO")
-    pop_icolo_nbo = forms.BooleanField(required=False, label="Icolo NBO")
-    pop_icolo_mba = forms.BooleanField(required=False, label="Icolo MBA")
-    pop_ixafrica_nbo = forms.BooleanField(required=False, label="IXAfrica NBO")
-    pop_raxio_ug = forms.BooleanField(required=False, label="Raxio UG")
-    pop_tanzania = forms.BooleanField(required=False, label="Tanzania")
 
     class Meta:
         model = Client
@@ -50,40 +46,43 @@ class BaseClientForm(forms.ModelForm):
             "secondary_email",
             "phone_number",
         ]
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Initialize POP checkboxes from instance
+
+        for pop_value, pop_label in Client.POP_CHOICES:
+            self.fields[_pop_field_name(pop_value)] = forms.BooleanField(
+                required=False,
+                label=pop_label,
+                widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            )
+
         if self.instance and self.instance.pk:
-            pops = self.instance.get_pops()
-            self.fields['pop_adc_nbo'].initial = Client.POP_ADC_NBO in pops
-            self.fields['pop_icolo_nbo'].initial = Client.POP_ICOLO_NBO in pops
-            self.fields['pop_icolo_mba'].initial = Client.POP_ICOLO_MBA in pops
-            self.fields['pop_ixafrica_nbo'].initial = Client.POP_IXAFRICA_NBO in pops
-            self.fields['pop_raxio_ug'].initial = Client.POP_RAXIO_UG in pops
-            self.fields['pop_tanzania'].initial = Client.POP_TANZANIA in pops
-    
+            pops = set(self.instance.get_pops())
+            for pop_value, _ in Client.POP_CHOICES:
+                self.fields[_pop_field_name(pop_value)].initial = pop_value in pops
+
+        self.regular_fields = [
+            self[field_name]
+            for field_name in self.fields
+            if not field_name.startswith("pop_")
+        ]
+        self.pop_fields = [
+            self[field_name]
+            for field_name in self.fields
+            if field_name.startswith("pop_")
+        ]
+
     def save(self, commit=True):
         instance = super().save(commit=False)
-        
-        # Save POPs from checkboxes
-        pops = []
-        if self.cleaned_data.get('pop_adc_nbo'):
-            pops.append(Client.POP_ADC_NBO)
-        if self.cleaned_data.get('pop_icolo_nbo'):
-            pops.append(Client.POP_ICOLO_NBO)
-        if self.cleaned_data.get('pop_icolo_mba'):
-            pops.append(Client.POP_ICOLO_MBA)
-        if self.cleaned_data.get('pop_ixafrica_nbo'):
-            pops.append(Client.POP_IXAFRICA_NBO)
-        if self.cleaned_data.get('pop_raxio_ug'):
-            pops.append(Client.POP_RAXIO_UG)
-        if self.cleaned_data.get('pop_tanzania'):
-            pops.append(Client.POP_TANZANIA)
-        
+
+        pops = [
+            pop_value
+            for pop_value, _ in Client.POP_CHOICES
+            if self.cleaned_data.get(_pop_field_name(pop_value))
+        ]
         instance.set_pops(pops)
-        
+
         if commit:
             instance.save()
         return instance
