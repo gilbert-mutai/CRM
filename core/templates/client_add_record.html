@@ -1,67 +1,32 @@
-{% extends 'base.html' %}
-{% block content %}
-    <div class="col-md-6 offset-md-3">
-        <h2 class="mb-4">Add New Client</h2>
-        <form method="POST" action="{% url 'add_client_record' %}">
-            {% csrf_token %}
-            
-            {# Regular fields #}
-            {% for field in form %}
-                {% if not field.name|slice:":4" == "pop_" %}
-                    <div class="mb-3">
-                        {{ field }}
-                        {% if field.errors %}
-                            <div class="text-danger">{{ field.errors }}</div>
-                        {% endif %}
-                    </div>
-                {% endif %}
-            {% endfor %}
-            
-            {# Point of Presence checkboxes #}
-            <div class="mb-3">
-                <label class="form-label fw-bold">Point of Presence (POP)</label>
-                <div class="form-check">
-                    {{ form.pop_adc_nbo }}
-                    <label class="form-check-label" for="{{ form.pop_adc_nbo.id_for_label }}">
-                        {{ form.pop_adc_nbo.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_icolo_nbo }}
-                    <label class="form-check-label" for="{{ form.pop_icolo_nbo.id_for_label }}">
-                        {{ form.pop_icolo_nbo.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_icolo_mba }}
-                    <label class="form-check-label" for="{{ form.pop_icolo_mba.id_for_label }}">
-                        {{ form.pop_icolo_mba.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_ixafrica_nbo }}
-                    <label class="form-check-label" for="{{ form.pop_ixafrica_nbo.id_for_label }}">
-                        {{ form.pop_ixafrica_nbo.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_raxio_ug }}
-                    <label class="form-check-label" for="{{ form.pop_raxio_ug.id_for_label }}">
-                        {{ form.pop_raxio_ug.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_tanzania }}
-                    <label class="form-check-label" for="{{ form.pop_tanzania.id_for_label }}">
-                        {{ form.pop_tanzania.label }}
-                    </label>
-                </div>
-            </div>
-            
-            <div class="mt-4">
-                <button type="submit" class="btn btn-outline-primary">Add Client</button>
-                <a href="{% url 'access_center' %}" class="btn btn-outline-secondary">Back</a>
-            </div>
-        </form>
+{% extends 'base.html' %} {% block content %}
+<div class="col-md-6 offset-md-3">
+  <h2 class="mb-4">Add New Client</h2>
+  <form method="POST" action="{% url 'add_client_record' %}">
+    {% csrf_token %} {# Regular fields #} {% for field in form.regular_fields %}
+    <div class="mb-3">
+      {{ field }} {% if field.errors %}
+      <div class="text-danger">{{ field.errors }}</div>
+      {% endif %}
     </div>
+    {% endfor %} {# Point of Presence checkboxes #}
+    <div class="mb-3">
+      <label class="form-label fw-bold">Point of Presence (POP)</label>
+      {% for field in form.pop_fields %}
+      <div class="form-check">
+        {{ field }}
+        <label class="form-check-label" for="{{ field.id_for_label }}">
+          {{ field.label }}
+        </label>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mt-4">
+      <button type="submit" class="btn btn-outline-primary">Add Client</button>
+      <a href="{% url 'access_center' %}" class="btn btn-outline-secondary"
+        >Back</a
+      >
+    </div>
+  </form>
+</div>
 {% endblock %}

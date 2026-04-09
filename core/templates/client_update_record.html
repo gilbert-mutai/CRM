@@ -1,161 +1,148 @@
-{% extends 'base.html' %}
-{% block content %}
-    <div class="col-md-6 offset-md-3">
-        <h2 class="mb-4">Update Client</h2>
-        {% if form.errors %}
-            <div class="alert alert-danger">
-                <ul>
-                    {% for field in form %}
-                        {% for error in field.errors %}
-                            <li>
-                                <strong>{{ field.label }}:</strong> {{ error }}
-                            </li>
-                        {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-                </ul>
-            </div>
-        {% endif %}
-        <form method="post" id="update-form">
-            {% csrf_token %}
-            <!-- Render each field manually without colons -->
-            <div class="mb-3">
-                <label for="{{ form.client_type.id_for_label }}">Client Type</label>
-                {{ form.client_type }}
-            </div>
-            <div class="mb-3">
-                <label for="{{ form.name.id_for_label }}">Full Name or Company</label>
-                {{ form.name }}
-            </div>
-            <div class="mb-3">
-                <label for="{{ form.contact_person.id_for_label }}">Contact Person (for Company)</label>
-                {{ form.contact_person }}
-            </div>
-            <div class="mb-3">
-                <label for="{{ form.primary_email.id_for_label }}">Primary Email Address</label>
-                {{ form.primary_email }}
-            </div>
-            <div class="mb-3">
-                <label for="{{ form.secondary_email.id_for_label }}">Secondary Email Address</label>
-                {{ form.secondary_email }}
-            </div>
-            <div class="mb-3">
-                <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
-                {{ form.phone_number }}
-            </div>
-
-            <!-- Point of Presence checkboxes -->
-            <div class="mb-3">
-                <label class="form-label fw-bold">Point of Presence (POP)</label>
-                <div class="form-check">
-                    {{ form.pop_adc_nbo }}
-                    <label class="form-check-label" for="{{ form.pop_adc_nbo.id_for_label }}">
-                        {{ form.pop_adc_nbo.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_icolo_nbo }}
-                    <label class="form-check-label" for="{{ form.pop_icolo_nbo.id_for_label }}">
-                        {{ form.pop_icolo_nbo.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_icolo_mba }}
-                    <label class="form-check-label" for="{{ form.pop_icolo_mba.id_for_label }}">
-                        {{ form.pop_icolo_mba.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_ixafrica_nbo }}
-                    <label class="form-check-label" for="{{ form.pop_ixafrica_nbo.id_for_label }}">
-                        {{ form.pop_ixafrica_nbo.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_raxio_ug }}
-                    <label class="form-check-label" for="{{ form.pop_raxio_ug.id_for_label }}">
-                        {{ form.pop_raxio_ug.label }}
-                    </label>
-                </div>
-                <div class="form-check">
-                    {{ form.pop_tanzania }}
-                    <label class="form-check-label" for="{{ form.pop_tanzania.id_for_label }}">
-                        {{ form.pop_tanzania.label }}
-                    </label>
-                </div>
-            </div>
-
-            <!-- Buttons -->
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-outline-primary">Update</button>
-                <a href="{% url 'client_record' form.instance.pk %}"
-                   class="btn btn-secondary">Cancel</a>
-            </div>
-        </form>
+{% extends 'base.html' %} {% block content %}
+<div class="col-md-6 offset-md-3">
+  <h2 class="mb-4">Update Client</h2>
+  {% if form.errors %}
+  <div class="alert alert-danger">
+    <ul>
+      {% for field in form %} {% for error in field.errors %}
+      <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+      {% endfor %} {% endfor %} {% for error in form.non_field_errors %}
+      <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  <form method="post" id="update-form">
+    {% csrf_token %}
+    <!-- Render each field manually without colons -->
+    <div class="mb-3">
+      <label for="{{ form.client_type.id_for_label }}">Client Type</label>
+      {{ form.client_type }}
+    </div>
+    <div class="mb-3">
+      <label for="{{ form.name.id_for_label }}">Full Name or Company</label>
+      {{ form.name }}
+    </div>
+    <div class="mb-3">
+      <label for="{{ form.contact_person.id_for_label }}"
+        >Contact Person (for Company)</label
+      >
+      {{ form.contact_person }}
+    </div>
+    <div class="mb-3">
+      <label for="{{ form.primary_email.id_for_label }}"
+        >Primary Email Address</label
+      >
+      {{ form.primary_email }}
+    </div>
+    <div class="mb-3">
+      <label for="{{ form.secondary_email.id_for_label }}"
+        >Secondary Email Address</label
+      >
+      {{ form.secondary_email }}
+    </div>
+    <div class="mb-3">
+      <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
+      {{ form.phone_number }}
     </div>
 
-    <!-- POP Change Confirmation Modal -->
-    <div class="modal fade"
-         id="dataCenterConfirmModal"
-         tabindex="-1"
-         aria-labelledby="dataCenterConfirmLabel"
-         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="dataCenterConfirmLabel">Confirm POP Change</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p id="dataCenterConfirmMessage">Are you sure you want to update the Point of Presence?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmDataCenterBtn">Confirm</button>
-                </div>
-            </div>
-        </div>
+    <!-- Point of Presence checkboxes -->
+    <div class="mb-3">
+      <label class="form-label fw-bold">Point of Presence (POP)</label>
+      {% for field in form.pop_fields %}
+      <div class="form-check">
+        {{ field }}
+        <label class="form-check-label" for="{{ field.id_for_label }}">
+          {{ field.label }}
+        </label>
+      </div>
+      {% endfor %}
     </div>
 
-    <!-- JS Logic -->
-    <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const updateForm = document.getElementById('update-form');
-    const popCheckboxes = [
-        document.getElementById('{{ form.pop_adc_nbo.id_for_label }}'),
-        document.getElementById('{{ form.pop_icolo_nbo.id_for_label }}'),
-        document.getElementById('{{ form.pop_icolo_mba.id_for_label }}'),
-        document.getElementById('{{ form.pop_ixafrica_nbo.id_for_label }}'),
-        document.getElementById('{{ form.pop_raxio_ug.id_for_label }}'),
-        document.getElementById('{{ form.pop_tanzania.id_for_label }}')
-    ];
-    const modal = new bootstrap.Modal(document.getElementById('dataCenterConfirmModal'));
-    const confirmBtn = document.getElementById('confirmDataCenterBtn');
+    <!-- Buttons -->
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-outline-primary">Update</button>
+      <a
+        href="{% url 'client_record' form.instance.pk %}"
+        class="btn btn-secondary"
+        >Cancel</a
+      >
+    </div>
+  </form>
+</div>
+
+<!-- POP Change Confirmation Modal -->
+<div
+  class="modal fade"
+  id="dataCenterConfirmModal"
+  tabindex="-1"
+  aria-labelledby="dataCenterConfirmLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dataCenterConfirmLabel">
+          Confirm POP Change
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <p id="dataCenterConfirmMessage">
+          Are you sure you want to update the Point of Presence?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="confirmDataCenterBtn">
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS Logic -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const updateForm = document.getElementById("update-form");
+    const popCheckboxes = updateForm.querySelectorAll('input[name^="pop_"]');
+    const modal = new bootstrap.Modal(
+      document.getElementById("dataCenterConfirmModal"),
+    );
+    const confirmBtn = document.getElementById("confirmDataCenterBtn");
 
     let popChanged = false;
 
     // Track changes to POP checkboxes
-    popCheckboxes.forEach(checkbox => {
-        if (checkbox) {
-            checkbox.addEventListener('change', function() {
-                popChanged = true;
-            });
-        }
+    popCheckboxes.forEach((checkbox) => {
+      if (checkbox) {
+        checkbox.addEventListener("change", function () {
+          popChanged = true;
+        });
+      }
     });
 
     // Prevent form submission and show modal if POPs changed
-    updateForm.addEventListener('submit', function(e) {
-        if (popChanged) {
-            e.preventDefault();
-            modal.show();
-        }
+    updateForm.addEventListener("submit", function (e) {
+      if (popChanged) {
+        e.preventDefault();
+        modal.show();
+      }
     });
 
     // Submit form when confirmed
-    confirmBtn.addEventListener('click', function() {
-        modal.hide();
-        updateForm.submit();
+    confirmBtn.addEventListener("click", function () {
+      modal.hide();
+      updateForm.submit();
     });
-});
-    </script>
+  });
+</script>
 {% endblock %}
